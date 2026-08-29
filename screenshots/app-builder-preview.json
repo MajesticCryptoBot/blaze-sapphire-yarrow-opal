@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Alpha Signals Pro",
+      "hasCanvas": false,
+      "bodyTextLen": 5160,
+      "bodyTextHash": "a3e00249c16b1e641b41ac2523768dce698d63d8af8d17f48d3bd2db3dbfa389",
+      "bodyTextPrefix": "A Alpha Signals Pro MARKET INTELLIGENCE Wire Markets Desk UTC Sa",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Alpha Signals Pro",
+      "hasCanvas": false,
+      "bodyTextLen": 5111,
+      "bodyTextHash": "58a805bcf4fd549516786fba3787c449931cd9469eb74d003980aaaa2ecddef5",
+      "bodyTextPrefix": "A Alpha Signals Pro MARKET INTELLIGENCE BTC 78,894.58 -1.12% ETH",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

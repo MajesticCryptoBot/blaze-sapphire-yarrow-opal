@@ -1,0 +1,1103 @@
+import asyncio
+import sys
+
+# === CRITICAL FIX FOR WINDOWS + AIOHTTP ===
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# Now safe to import everything else
+import os
+import logging
+import certifi
+import ssl
+import re
+import aiohttp
+from aiohttp import ClientTimeout, ClientConnectorError, ServerTimeoutError, ClientResponseError
+from pathlib import Path
+from datetime import datetime, timezone
+from deep_translator import MyMemoryTranslator
+
+os.system("title ASP – API Mode")
+
+# ==========================================================
+# SSL / CERTIFICATES
+# ==========================================================
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+ssl._create_default_https_context = ssl.create_default_context(
+    cafile=certifi.where()
+)
+
+# ==========================================================
+# PROFESSIONAL CLEAN LOGGING SYSTEM
+# ==========================================================
+
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+
+logging.basicConfig(
+    level=logging.INFO,      # main console level
+    format=LOG_FORMAT
+)
+
+logger = logging.getLogger(__name__)
+
+# ---- File log (full archive) ----
+file_handler = logging.FileHandler(
+    "ASP_forward.log",
+    encoding="utf-8"
+)
+file_handler.setLevel(logging.DEBUG)   # save everything in file
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+logger.addHandler(file_handler)
+
+# ==========================================================
+# SILENCE NOISY LIBRARIES
+# ==========================================================
+
+# LiteLLM
+os.environ["LITELLM_LOG"] = "ERROR"
+logging.getLogger("LiteLLM").setLevel(logging.ERROR)
+logging.getLogger("litellm").setLevel(logging.ERROR)
+
+# Telethon
+logging.getLogger("telethon").setLevel(logging.WARNING)
+logging.getLogger("telethon.network").setLevel(logging.WARNING)
+
+# aiohttp
+logging.getLogger("aiohttp").setLevel(logging.WARNING)
+logging.getLogger("aiohttp.client").setLevel(logging.WARNING)
+logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+# urllib / requests noise
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
+
+# ==========================================================
+# STARTUP LOG
+# ==========================================================
+logger.info("ASP Blockbeats started with professional clean logging mode")
+
+# ── TELEGRAM SCRAPING CONFIG ────────────────────────────────────────
+ENABLE_TG_SCRAPING = True
+
+TG_SOURCE_CHANNELS = [
+    "@WatcherGuru",
+    "@theblockbeats",
+    "@NEWSLIVESTREAM",    # "@binance",
+]
+
+TG_FETCH_OLD_ON_START = False   # True = scrape last messages on startup
+TG_OLD_LIMIT = 30               # how many old messages per channel
+
+# ── LiteLLM ────────────────────────────────────────
+from litellm import completion
+import litellm
+
+litellm.success_callback = ["logger"]
+litellm.drop_params = True
+os.environ["LITELLM_LOG"] = "DEBUG"
+
+PROVIDERS = [
+    # ── Primary (long-term free) ──────────────────────────────
+    {
+        "name": "Gemini-Primary",
+        "model": "gemini/gemini-3.7-flash",          # Latest strong Flash model (Aug 2026)
+        "api_key": "AIzaSyBvppEyw0TjUaCU1g5e4zrJjWF0Gfum13E",       # from Google AI Studio
+        "type": "gemini"
+    },    
+    {
+        "name": "Groq-Secondary",
+        "model": "groq/openai/gpt-oss-120b",
+        "api_key": "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",
+        "base_url": "https://api.groq.com/openai/v1",
+        "type": "openai"
+    },
+    
+    # ── Groq Fallbacks ───────────────────────────────────────
+    
+    {
+        "name": "Groq-Fast",
+        "model": "groq/openai/gpt-oss-20b",
+        "api_key": "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",
+        "base_url": "https://api.groq.com/openai/v1",
+        "type": "openai"
+    },
+]
+
+# ── Rewrite style prompt ────────────────────────────────────────────────
+REWRITE_SYSTEM_PROMPT = """You are a professional financial news editor for a serious Telegram channel @AlphaSignalsPro, modeled after Bloomberg, Reuters, and CNBC Crypto World style.
+
+Style rules — strictly follow ALL:
+
+- Serious, factual, objective, and professional tone
+- Clear, concise sentences — no exaggeration or dramatic flair
+- Neutral voice: report facts directly without hype, slang, or personality
+- Use precise, standard financial phrasing (e.g. "rises to", "drops below", "acquires", "delays decision on")
+- Keep all numbers, prices, tickers, company names, and exact facts unchanged
+- Preserve the existing tag prefix exactly if present (JUST IN:, BREAKING:, ALERT:, NEW:) — place it at the very beginning and do not alter it
+- No emojis, no informal punctuation, no "according to", no "reportedly", no hedging words
+- Never add new information or interpretation
+- Always remove the word : "- Link"
+- Output ONLY the rewritten message — nothing else, no explanations, no extra text
+- If the message contains "oil", "crude", "barrel", or "WTI"/"Brent": then replace "Burundi" with "Brent crude" and remove the "and" before it (e.g., "U.S. and Burundi oil" → "U.S. Brent crude oil").
+- If the message does NOT contain oil/energy keywords: make NO changes related to "Burundi" or "Brunt crude" — leave the text as-is.
+- Always replace the word "Maji" and "Moji" by "a certain whale"
+- Always produce a COMPLETE, self-contained sentence. Never truncate or cut the message mid-way.
+- The rewritten message must be roughly the same length as the original (do not shorten aggressively).
+
+CRITICAL DISTINCTION FOR CRYPTO PRICE & LIQUIDATION MESSAGES:
+
+There are two types of messages you will receive:
+
+1. REAL price movement (correct as-is, do NOT add "if"):
+   - Examples: "JUST IN: Bitcoin drops below $70,000", "JUST IN: Bitcoin falls below 68000", "Bitcoin hits $68,000"
+   - These reflect the actual live price at the moment the message was sent. Keep the wording factual and direct. Use "drops below", "falls below", "rises above", etc.
+
+2. HYPOTHETICAL / analysis / liquidation cluster messages (MUST contain "if"):
+   - These are forward-looking warnings about potential liquidations if price reaches a certain level.
+   - Original example: "JUST IN: Bitcoin falls below $68,000, mainstream CEX liquidation volume reaches $1.068 billion"
+   - Correct rewritten version: "JUST IN: If Bitcoin falls below $68,000, mainstream CEX liquidation volume reaches $1.068 billion"
+   - Always insert "If" (capital I) right after the tag and before the price condition when the message is describing a potential liquidation cascade or cluster, not the current price.
+
+How to detect type 2 (add "If"):
+- The message talks about liquidation volume / long liquidations / cascade that "reaches", "hits", or "could trigger" at a price level.
+- It does NOT say the price has actually moved there right now.
+- It is warning about what would happen "if" price falls below a level.
+
+Examples of correct handling:
+
+Input: JUST IN: Bitcoin falls below $68,000, mainstream CEX liquidation volume reaches $1.068 billion
+Output: JUST IN: If Bitcoin falls below $68,000, mainstream CEX liquidation volume reaches $1.068 billion
+
+Input: JUST IN: Bitcoin drops below $70,000
+Output: JUST IN: Bitcoin drops below $70,000
+
+Input: JUST IN: Bitcoin reached 94200 USD
+Output: JUST IN: Bitcoin rises to $94,200
+
+Input: BREAKING: MicroStrategy buys another 1200 BTC
+Output: BREAKING: MicroStrategy acquires additional 1,200 Bitcoin
+
+Input: ALERT: SEC delays spot ETF decision once again
+Output: ALERT: SEC postpones decision on spot ETF application
+
+CRITICAL ANTI-LEAK INSTRUCTIONS:
+- Output ONLY the rewritten message. Absolutely nothing else.
+- NEVER output any thinking process, reasoning, <think>, "Here's a thinking process", "Analyze", or any meta commentary.
+- Do not add any text before or after the final clean message.
+- Respond with exactly one clean line starting with the tag.
+- Never wrap the output in markdown code blocks (```)."""
+
+# ── NEWS SOURCES CONFIG ─────────────────────────────────────
+
+DESTINATION_CHANNEL = "@AlphaSignalsPro"
+
+# Files
+CRYPTO_FINANCIAL_FILE = 'crypto_financial.txt'
+
+# Duplicate protection + resume last_id
+SEEN_CACHE_FILE = 'ASP_seen_cache.txt'
+seen_ids = set()
+last_id = 0
+
+if os.path.exists(SEEN_CACHE_FILE):
+    with open(SEEN_CACHE_FILE, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    seen_ids = set(lines)
+    numeric = [int(x) for x in lines if x.isdigit()]
+    if numeric:
+        last_id = max(numeric)
+    logger.info(f"Resumed from last_id = {last_id} ({len(lines)} messages processed)")
+            
+# Figures (same as before – unchanged)
+FIGURES_FOLDER = Path(r"C:\Users\pauld\Pictures\Figures")
+SUPPORTED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm", ".mov"}
+VIDEO_EXT = {".mp4", ".webm", ".mov", ".gif"}
+
+def reload_figures_folder():
+    global AVAILABLE_IMAGES
+    new_dict = {}
+    for p in FIGURES_FOLDER.iterdir():
+        if p.is_file() and p.suffix.lower() in SUPPORTED_EXT:
+            stem = p.stem.lower()
+            priority = 0 if p.suffix.lower() in VIDEO_EXT else 1
+            key = (stem, priority)
+            if key not in new_dict or priority < new_dict[key][1]:
+                new_dict[key] = (p, priority)
+    AVAILABLE_IMAGES = {stem: path for (stem, _), (path, _) in new_dict.items()}
+    logger.info(f"Figures loaded: {len(AVAILABLE_IMAGES)} items")
+
+AVAILABLE_IMAGES = {}
+reload_figures_folder()
+
+# === TRIGGERS – PERSONALITIES WITH LAST NAME AS PRIMARY KEY (LIKE "armstrong") ===
+TRIGGERS = {
+    "bitcoin": [r"\bbitcoin\b", r"\bbtc\b"],
+    "aramco": [r"\baramco\b"],
+    "nyse": [r"\bnyse\b"],
+    "stock": [r"\bstock\b", r"\bstock market\b"],
+    "blackrock": [r"\bblackrock\b", r"\bibit\b"],
+    "goldmansachs": [r"\bgoldman sachs\b", r"\bgoldmansachs\b"],
+    "gold": [r"\bgold\b"],
+    "silver": [r"\bsilver\b"],
+    "ethereum": [r"\bethereum\b", r"\beth\b"],
+    "solana": [r"\bsolana\b", r"\bsol\b"],
+    "musk": [r"\bmusk\b", r"\belon musk\b"],
+    "buffett": [r"\bbuffett\b", r"\bwarren buffett\b"],
+    "cz": [r"\bcz\b", r"\bchangpeng zhao\b"],
+    "saylor": [r"\bsaylor\b", r"\bmichael saylor\b"],
+    "sec": [r"\bsec\b(?!\w)", r"\bgensler\b", r"\bgary gensler\b"],
+    "fed": [r"\bfed\b", r"\bpowell\b", r"\bfederal reserve\b"],
+    "nvidia": [r"\bnvidia\b", r"\bjensen huang\b"],
+    "tesla": [r"\btesla\b"],
+    "coinbase": [r"\bcoinbase\b"],
+    "binance": [r"\bbinance\b"],
+    "polymarket": [r"\bpolymarket\b"],
+    "google": [r"\bgoogle\b"],
+    "tether": [r"\btether\b"],
+    "meta": [r"\bmeta\b", r"\bfacebook\b"],
+    "liquidated": [r"\bliquidated\b", r"\bliquidationb" ],
+    "surges": [r"\bsurges\b"],
+    "rises": [r"\brises\b"],
+    "apple": [r"\bapple\b", r"\btim cook\b"],
+    "jpmorgan": [r"\bjp morgan\b", r"\bjpmorgan\b"],
+    "grayscale": [r"\bgrayscale\b"],
+    "circle": [r"\bcircle\b"],
+    "consensys": [r"\bconsensys\b"],
+    "arkinvest": [r"\bark invest\b", r"\barkinvest\b"],
+    "bitfinex": [r"\bbitfinex\b"],  
+    "stanley": [r"\bstanley\b", r"\bmorgan stanley\b"],
+    "amazon": [r"\bamazon\b"], 
+    "microsoft": [r"\bmicrosoft\b"],
+    "strategy": [
+        r"\bmicrostrategy\b",
+        r"\bstrategy inc\b",
+        r"\bstrategy\b(?=\s*(?:inc|buys|acquires|holds|adds|purchased|bitcoin|btc|treasury|reserve|mstr))",
+    ],
+    "xrp": [r"\bxrp\b"],
+    "bnb": [r"\bbnb\b"],
+    "mastercard": [r"\bmastercard\b"],
+    "sharplink": [r"\bsharplink\b"],
+    "etoro": [r"\betoro\b"],
+    "bank of china": [r"\bbank of china\b"],
+    "strait of hormuz": [r"\bstrait of hormuz\b"],
+    "bank of america": [r"\bbank of america\b"],
+    "paypal": [r"\bpaypal\b"],
+    "pnc": [r"\bpnc\b"],
+    "crude": [r"\boil\b", r"\bcrude\b", r"\bcrude oil\b"],
+        
+    "china": [r"\bchina\b"],
+    "qatar": [r"\bqatar\b"],
+    "spain": [r"\bspain\b"],
+    "iraq": [r"\biraq\b"],
+    "india": [r"\bindia\b"],
+    "iran": [r"\biran\b"],
+    "lebanon": [r"\blebanon\b"],
+    "pakistan": [r"\bpakistan\b"],
+
+    "russia": [r"\brussia\b"],
+    "us": [r"\bUS\b", r"\bUSA\b", r"\bUnited States\b"],
+    "ukraine": [r"\bukraine\b"],
+    "palestine": [r"\bpalestine\b"],
+    "syria": [r"\bsyria\b"],
+    "turkey": [r"\bturkey\b"],
+    "saudi": [r"\bsaudi\b"],
+    "uae": [r"\buae\b", r"\bunited arab emirates\b"],
+    "dubai": [r"\bdubai\b"],
+    "kuwait": [r"\bkuwait\b"],
+    "bahrain": [r"\bbahrain\b"],
+    "oman": [r"\boman\b"],
+    "egypt": [r"\begypt\b"],
+    "jordan": [r"\bjordan\b"],
+    "yemen": [r"\byemen\b"],
+
+    "germany": [r"\bgermany\b"],
+    "france": [r"\bfrance\b"],
+    "uk": [r"\buk\b", r"\bunited kingdom\b", r"\bbritain\b"],
+    "italy": [r"\bitaly\b"],
+    "netherlands": [r"\bnetherlands\b", r"\bdutch\b"],
+    "switzerland": [r"\bswitzerland\b", r"\bswiss\b"],
+    "sweden": [r"\bsweden\b"],
+    "norway": [r"\bnorway\b"],
+    "denmark": [r"\bdenmark\b"],
+    "finland": [r"\bfinland\b"],
+    "belgium": [r"\bbelgium\b"],
+    "austria": [r"\baustria\b"],
+    "poland": [r"\bpoland\b"],
+
+    "japan": [r"\bjapan\b"],
+    "south korea": [r"\bsouth korea\b", r"\bkorea\b"],
+    "singapore": [r"\bsingapore\b"],
+    "hong kong": [r"\bhong kong\b", r"\bhongkong\b"],
+    "taiwan": [r"\btaiwan\b"],
+    "thailand": [r"\bthailand\b"],
+    "vietnam": [r"\bvietnam\b"],
+    "malaysia": [r"\bmalaysia\b"],
+    "indonesia": [r"\bindonesia\b"],
+    "philippines": [r"\bphilippines\b"],
+    "australia": [r"\baustralia\b"],
+
+    "brazil": [r"\bbrazil\b", r"\bbrasil\b"],
+    "mexico": [r"\bmexico\b"],
+    "argentina": [r"\bargentina\b"],
+    "chile": [r"\bchile\b"],
+    "colombia": [r"\bcolombia\b"],
+    "peru": [r"\bperu\b"],
+    "south africa": [r"\bsouth africa\b"],
+    "nigeria": [r"\bnigeria\b"],
+    "kenya": [r"\bkenya\b"],
+    "ethiopia": [r"\bethiopia\b"],
+    "venezuela": [r"\bvenezuela\b"],
+    "libya": [r"\blibya\b"],
+    "algeria": [r"\balgeria\b"],
+    "morocco": [r"\bmorocco\b"],
+
+    "canada": [r"\bcanada\b"],
+    "new zealand": [r"\bnew zealand\b"],
+
+    "justice": [r"\bjustice\b"],
+    "nasdaq": [r"\bnasdaq\b"],
+    "ships": [r"\bships\b"],
+    
+    
+    # === PERSONALITIES – LAST NAME FIRST (EXACTLY LIKE "armstrong") ===
+    "armstrong": [r"\barmstrong\b", r"\bbrian armstrong\b"],
+    "araghchi": [r"\baraghchi\b", r"\babbas araghchi\b"],
+    "lee": [r"\blee\b", r"\btom lee\b"],
+    "warsh": [r"\bwarsh\b", r"\bkevin warsh\b"],
+    "pompliano": [r"\bpompliano\b", r"\banthony pompliano\b"],
+    "lummis": [r"\blummis\b", r"\bcynthia lummis\b"],
+    "mamdani": [r"\bmamdani\b", r"\bzohran mamdani\b"],
+    "putin": [r"\bputin\b", r"\bvladimir putin\b"], 
+    "tenev": [r"\btenev\b", r"\bvlad tenev\b"],
+    "jinping": [r"\bjinping\b", r"\bxi jinping\b"],
+    "bukele": [r"\bbukele\b", r"\bnayib bukele\b"],
+    "cook": [r"\bcook\b", r"\btim cook\b"],
+    "huang": [r"\bhuang\b", r"\bjensen huang\b"],
+    "vitalik": [r"\bvitalik\b", r"\bvitalik buterin\b"],
+    "Tsang": [r"\btsang\b", r"\bchi tsang\b"],
+    "atkins": [r"\batkins\b", r"\bpaul atkins\b"],
+    "hoskinson": [r"\bhoskinson\b", r"\bcharles hoskinson\b"],
+    "sun": [r"\bsun\b", r"\bjustin sun\b"],
+    "voorhees": [r"\bvoorhees\b", r"\berik voorhees\b"],
+    "dixon": [r"\bdixon\b", r"\bchris dixon\b"],
+    "srinivasan": [r"\bsrinivasan\b", r"\bbalaji srinivasan\b"],
+    "antonopoulos": [r"\bantonopoulos\b", r"\bandreas antonopoulos\b"],
+    "ver": [r"\bver\b", r"\broger ver\b"],
+    "nakamoto": [r"\bnakamoto\b", r"\bsatoshi nakamoto\b"],
+    "fink": [r"\bfink\b", r"\blarry fink\b"],
+    "dimon": [r"\bdimon\b", r"\bjamie dimon\b"],
+    "pal": [r"\bpal\b", r"\braoul pal\b"],
+
+    # === INSTITUTIONS / PROJECTS / BRANDS (unchanged – safe) ===
+    "telegram": [r"\btelegram\b"],
+    "whale": [r"\bwhale\b"],
+    "glassnode": [r"\bglassnode\b"],
+    "facebook": [r"\bfacebook\b"],
+    "anthropic": [r"\banthropic\b"],
+    "maersk": [r"\bmaersk\b"],
+    "paramount": [r"\bparamount\b"],
+    "warner bros": [r"\bwarner bros\b"],
+    "starlink": [r"\bstarlink\b"],
+    "spacex": [r"\bspacex\b", r"\bspace x\b"],
+    "metamask": [r"\bmetamask\b"],
+    "metaplanet": [r"\bmetaplanet\b"],
+    "nokia": [r"\bnokia\b"],
+    "deutsche bank": [r"\bdeutsche bank\b"],
+    "cftc": [r"\bcftc\b"],  
+    "fdic": [r"\bfdic\b"],
+    "chainlink": [r"\bchainlink\b"],
+    "eu": [r"\beu\b", r"\beuropean union\b"],
+    "hyperliquid": [r"\bhyperliquid\b"],
+    "department of justice": [r"\bdepartment of justice\b", r"\bdoj\b"],
+    "department of commerce": [r"\bdepartment of commerce\b", r"\bdoc\b"],
+    "US department of war": [r"\bUS department of war\b", r"\bdow\b"],
+    "huawei": [r"\bhuawei\b"],
+    "citi": [r"\bciti\b", r"\bcitibank\b"],
+    "robinhood": [r"\brobinhood\b"],
+    "ton": [r"\bton\b", r"\bthe open network\b"],
+    "x": [r"\bx\.com\b", r"\bx\b"],
+    "samsung": [r"\bsamsung\b"],
+    "ufc": [r"\bufc\b"],
+    "s&p500": [r"\bs&p 500\b", r"\bsp500\b", r"\bs&p500\b"],
+    "iphone 17": [r"\biphone 17\b"],
+    "kraken": [r"\bkraken\b"],
+    "chrome": [r"\bchrome\b", r"\bgoogle chrome\b"],
+    "fidelity": [r"\bfidelity\b", r"\bfidelity investments\b"],
+    "goldmansachs": [r"\bgoldman sachs\b", r"\bgoldmansachs\b"],
+
+}
+
+def get_matching_images(text: str):
+    if not text:
+        return []
+
+    reload_figures_folder()  # live updates
+
+    matches = []
+    used_keys = set()
+    lower_text = text.lower()
+
+    for key, patterns in TRIGGERS.items():
+        if key in used_keys:
+            continue
+        if any(re.search(p, lower_text, re.IGNORECASE) for p in patterns):
+            if key in AVAILABLE_IMAGES:
+                path = AVAILABLE_IMAGES[key]
+                if path.exists():
+                    ext = path.suffix.lower()
+                    type_name = "VIDEO/GIF" if ext in VIDEO_EXT else "photo"
+                    logger.info(f"Attached {type_name}: {path.name} ← triggered by '{key}'")
+                    matches.append(path)
+                    used_keys.add(key)
+    return matches[:10]
+
+def clean_message(text: str) -> str:
+    if not text:
+        return ""
+
+    # 1. Remove URLs, mentions, hashtags
+    text = re.sub(r"https?://\S+|www\.\S+|@\w+|#\w+", "", text)
+
+    # 2. ULTRA-AGGRESSIVE KILL OF EVERYTHING AFTER BLOCKBEATS OR "ACCORDING TO"
+    kill_triggers = [
+        r"BlockBeats",                  # Any mention of BlockBeats
+        r"According\s+to\s+BlockBeats",  # "According to BlockBeats"
+        r"According\s+to",              # Any "According to..." (catches Binance, official, etc.)
+        r"Source\s*:\s*BlockBeats",     # Source: BlockBeats
+        r"via\s+BlockBeats",            # via BlockBeats
+    ]
+
+    for trigger in kill_triggers:
+        match = re.search(trigger, text, flags=re.IGNORECASE)
+        if match:
+            text = text[:match.start()].strip()
+            logger.debug(f"Killed footer at: {trigger}")
+            break  # Stop after first match
+
+    # 3. Additional fallback: kill any leftover Bloomberg/BlockBeats lines
+    lines = []
+    for line in text.split('\n'):
+        line = line.strip()
+        lower = line.lower()
+        if any(bad in lower for bad in [
+            "blockbeats", "bloomberg", "according to", "source:", "via ", 
+            "thea monitoring", "auntie ai", "on november", "on december"
+        ]):
+            continue
+        if line:
+            lines.append(line)
+
+    text = "\n".join(lines)
+
+    # 4. Remove junk words
+    junk = ["Subscribe", "Follow"]
+    for w in junk:
+        text = re.sub(rf"\b{w}\b", "", text, flags=re.IGNORECASE)
+
+    # 5. Final cleanup
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"\.+$", "", text)  # Remove trailing dots
+    text = text.strip()
+
+    return text if text else ""
+
+def is_weird_message(text: str) -> bool:
+    if not text or len(text.strip()) < 8:
+        return True
+    stripped = text.strip()
+    lower = stripped.lower()
+
+    # Pure number / price spam
+    if re.match(r'^\s*[\d$,.\s!]+\s*$', stripped):
+        return True
+
+    # Classic BlockBeats bug patterns
+    if re.search(r'now\s+\$\d+', lower) and len(stripped.split()) <= 7:
+        return True
+    if re.search(r'bitcoin now \$\d+', lower):
+        return True
+    if re.search(r'^\s*\d{4,6}\s*[!?.]*\s*$', lower):  # just "45000" or "45000!"
+        return True
+
+    # Too short or ends with !
+    if len(stripped) < 25 and stripped.endswith('!'):
+        return True
+
+    return False
+
+def store_message_in_file(text):
+    """Store a message in ASPstorage.txt with a UTC timestamp."""
+    try:
+        # Generate UTC timestamp in format [YYYY-MM-DD HH:MM:SS]
+        timestamp = datetime.now(timezone.utc).strftime('[%Y-%m-%d %H:%M:%S]')
+        # Format message with timestamp
+        formatted_message = f"{timestamp} {text}"
+        
+        with open(CRYPTO_FINANCIAL_FILE, 'a', encoding='utf-8') as f:
+            f.write(formatted_message + "\n")
+        logger.debug(f"Stored message in {CRYPTO_FINANCIAL_FILE}: '{formatted_message}'")
+    except Exception as e:
+        logger.error(f"Error storing message in file: {e}")
+
+def apply_smart_tagging(cleaned: str) -> str:
+    text = cleaned.strip()
+    if not text:
+        return ""
+
+    lower = text.lower()
+
+    # === KEYWORD SETS ===
+    crypto_assets = {"btc", "bitcoin", "eth", "ethereum", "sol", "solana", "xrp"}
+    god_tier = {"musk", "elon musk", "saylor", "michael saylor", "blackrock", "microstrategy", "strategy"}
+    regulatory_macro = {"fed", "powell", "jerome powell", "sec", "gensler", "gary gensler", "regulation", "regulatory", "cftc", "doj"}
+
+    important_keywords = {
+        "blackrock", "strategy", "saylor", "musk", "sec", "gensler", "fed", "powell", "gold", "jpmorgan", 
+        "nvidia", "tesla", "apple", "amazon", "meta", "google", "microsoft", "polymarket", "liquidated", "liquidation", "mastercard"
+    }
+
+    # === ULTRA-ROBUST PRICE DETECTION (unchanged – already good) ===
+    has_price = bool(re.search(r"(?:US\$|\$)\d{1,3}(?:[.,]\d{3})*(?:\.\d+)?|\d{1,3}(?:[.,]\d{3})*(?:\.\d+)?\s*(?:USD|USDT|BTC|ETH|dollars?)", text, re.IGNORECASE))
+
+    # === EXACT WORD MATCHING ONLY (THIS FIXES "sec" in "securities") ===
+    def has_word(text_lower, word):
+        return re.search(rf"\b{re.escape(word)}\b", text_lower, re.IGNORECASE) is not None
+
+    has_crypto = any(has_word(lower, asset) for asset in crypto_assets)
+    has_god_tier = any(has_word(lower, kw) for kw in god_tier)
+    has_regulatory = any(has_word(lower, kw) for kw in regulatory_macro)
+    has_important = any(has_word(lower, kw) for kw in important_keywords)
+
+    # === OLD NEWS KILLER (also use word boundaries) ===
+    old_news_indicators = {
+        "yesterday", "last week", "last month", "on november", "on october", "on december",
+        "in october", "in november", "in 2024", "in 2025", "earlier this", "previously",
+        "reportedly", "according to", "announced on", "filed on", "said on", "back in"
+    }
+    is_old_news = any(has_word(lower, indicator) for indicator in old_news_indicators)
+
+    # === URGENCY FOR JUST IN: ===
+    urgency_words = {"now", "hits", "breaks", "surges", "drops", "falls", "jumps", "spikes", 
+                     "crashes", "soars", "plunges", "crosses", "above", "below", "reclaims", "exceeds"}
+    has_urgency = any(has_word(lower, word) for word in urgency_words)
+
+    # === ULTRA-ELITE TAG SYSTEM ===
+    tag = ""
+
+    if has_crypto and has_price and has_urgency and not is_old_news:
+        tag = "JUST IN: "
+
+    elif has_god_tier and not is_old_news:
+        tag = "BREAKING: "
+
+    elif has_regulatory and not is_old_news:
+        tag = "ALERT: "
+
+    elif (has_crypto or has_important) and not is_old_news:
+        tag = "NEW: "
+
+    # Apply tag only if not already present
+    if tag and not any(text.upper().startswith(t) for t in ["JUST IN:", "BREAKING:", "ALERT:", "NEW:"]):
+        text = tag + text
+    
+    # Final fix for any leftover currency typos
+    text = re.sub(r"\bUs[$&]", "US$", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bUS&", "US$", text)
+
+    return text
+
+def add_country_flags(text: str) -> str:
+    """Add country flags AFTER AI rewrite so they are not stripped by the LLM.
+    Expanded with major finance, crypto, macro, energy, and geopolitical countries."""
+    if not text or not text.strip():
+        return text
+
+    lower = text.lower()
+    detected_flags = set()
+
+    country_flags = {
+        # === UNITED STATES (special handling for currency) ===
+        "us": "🇺🇸", "usa": "🇺🇸", "u.s.": "🇺🇸", "america": "🇺🇸", "american": "🇺🇸", "americans": "🇺🇸",
+        "united states": "🇺🇸", "united states of america": "🇺🇸",
+        # States, cities & institutions (kept comprehensive)
+        "alabama": "🇺🇸", "alaska": "🇺🇸", "arizona": "🇺🇸", "arkansas": "🇺🇸", "california": "🇺🇸",
+        "colorado": "🇺🇸", "connecticut": "🇺🇸", "delaware": "🇺🇸", "florida": "🇺🇸", "georgia": "🇺🇸",
+        "hawaii": "🇺🇸", "idaho": "🇺🇸", "illinois": "🇺🇸", "indiana": "🇺🇸", "iowa": "🇺🇸",
+        "kansas": "🇺🇸", "kentucky": "🇺🇸", "louisiana": "🇺🇸", "maine": "🇺🇸", "maryland": "🇺🇸",
+        "massachusetts": "🇺🇸", "michigan": "🇺🇸", "minnesota": "🇺🇸", "mississippi": "🇺🇸",
+        "missouri": "🇺🇸", "montana": "🇺🇸", "nebraska": "🇺🇸", "nevada": "🇺🇸",
+        "new hampshire": "🇺🇸", "new jersey": "🇺🇸", "new mexico": "🇺🇸", "new york": "🇺🇸",
+        "north carolina": "🇺🇸", "north dakota": "🇺🇸", "ohio": "🇺🇸", "oklahoma": "🇺🇸",
+        "oregon": "🇺🇸", "pennsylvania": "🇺🇸", "rhode island": "🇺🇸", "south carolina": "🇺🇸",
+        "south dakota": "🇺🇸", "tennessee": "🇺🇸", "texas": "🇺🇸", "utah": "🇺🇸",
+        "vermont": "🇺🇸", "virginia": "🇺🇸", "washington": "🇺🇸", "west virginia": "🇺🇸",
+        "wisconsin": "🇺🇸", "wyoming": "🇺🇸", "dc": "🇺🇸", "washington dc": "🇺🇸",
+        "new york city": "🇺🇸", "nyc": "🇺🇸", "los angeles": "🇺🇸", "la": "🇺🇸", "chicago": "🇺🇸",
+        "houston": "🇺🇸", "miami": "🇺🇸", "las vegas": "🇺🇸", "san francisco": "🇺🇸",
+        "silicon valley": "🇺🇸", "boston": "🇺🇸", "seattle": "🇺🇸", "dallas": "🇺🇸",
+        "atlanta": "🇺🇸", "philadelphia": "🇺🇸", "phoenix": "🇺🇸", "detroit": "🇺🇸",
+        "denver": "🇺🇸", "nashville": "🇺🇸", "austin": "🇺🇸", "white house": "🇺🇸",
+        "pentagon": "🇺🇸", "wall street": "🇺🇸", "nyse": "🇺🇸", "nasdaq": "🇺🇸",
+
+        # === MAJOR ECONOMIES & G20 ===
+        "china": "🇨🇳", "chinese": "🇨🇳", "beijing": "🇨🇳", "shanghai": "🇨🇳",
+        "japan": "🇯🇵", "japanese": "🇯🇵", "tokyo": "🇯🇵",
+        "germany": "🇩🇪", "german": "🇩🇪", "berlin": "🇩🇪",
+        "united kingdom": "🇬🇧", "uk": "🇬🇧", "britain": "🇬🇧", "british": "🇬🇧", "england": "🇬🇧", "london": "🇬🇧",
+        "france": "🇫🇷", "french": "🇫🇷", "paris": "🇫🇷",
+        "india": "🇮🇳", "indian": "🇮🇳", "delhi": "🇮🇳", "mumbai": "🇮🇳", "bangalore": "🇮🇳",
+        "brazil": "🇧🇷", "brasil": "🇧🇷", "rio": "🇧🇷", "sao paulo": "🇧🇷",
+        "canada": "🇨🇦", "canadian": "🇨🇦", "ottawa": "🇨🇦", "toronto": "🇨🇦",
+        "italy": "🇮🇹", "italian": "🇮🇹", "rome": "🇮🇹", "milan": "🇮🇹",
+        "australia": "🇦🇺", "australian": "🇦🇺", "sydney": "🇦🇺", "melbourne": "🇦🇺",
+        "mexico": "🇲🇽", "mexican": "🇲🇽",
+        "south korea": "🇰🇷", "korea": "🇰🇷", "seoul": "🇰🇷",
+        "indonesia": "🇮🇩", "indonesian": "🇮🇩", "jakarta": "🇮🇩",
+        "turkey": "🇹🇷", "turkish": "🇹🇷", "ankara": "🇹🇷", "istanbul": "🇹🇷",
+        "saudi arabia": "🇸🇦", "saudi": "🇸🇦", "riyadh": "🇸🇦",
+        "netherlands": "🇳🇱", "dutch": "🇳🇱", "amsterdam": "🇳🇱",
+        "switzerland": "🇨🇭", "swiss": "🇨🇭", "zurich": "🇨🇭", "geneva": "🇨🇭",
+
+        # === BRICS & BRICS+ / Emerging Powers ===
+        "russia": "🇷🇺", "russian": "🇷🇺", "moscow": "🇷🇺",
+        "south africa": "🇿🇦", "south african": "🇿🇦", "johannesburg": "🇿🇦", "pretoria": "🇿🇦",
+        "egypt": "🇪🇬", "egyptian": "🇪🇬", "cairo": "🇪🇬",
+        "ethiopia": "🇪🇹", "ethiopian": "🇪🇹", "addis ababa": "🇪🇹",
+        "iran": "🇮🇷", "iranian": "🇮🇷", "tehran": "🇮🇷",
+
+        # === OPEC / Major Oil & Energy Players ===
+        "uae": "🇦🇪", "united arab emirates": "🇦🇪", "dubai": "🇦🇪", "abu dhabi": "🇦🇪",
+        "iraq": "🇮🇶", "iraqi": "🇮🇶", "baghdad": "🇮🇶",
+        "qatar": "🇶🇦", "qatari": "🇶🇦", "doha": "🇶🇦",
+        "kuwait": "🇰🇼", "kuwaiti": "🇰🇼",
+        "nigeria": "🇳🇬", "nigerian": "🇳🇬", "abuja": "🇳🇬", "lagos": "🇳🇬",
+        "venezuela": "🇻🇪", "venezuelan": "🇻🇪",
+        "libya": "🇱🇾", "libyan": "🇱🇾",
+        "algeria": "🇩🇿", "algerian": "🇩🇿",
+
+        # === Other Geopolitical / Macro / Crypto-relevant ===
+        "spain": "🇪🇸", "spanish": "🇪🇸", "madrid": "🇪🇸", "barcelona": "🇪🇸",
+        "sweden": "🇸🇪", "swedish": "🇸🇪", "stockholm": "🇸🇪",
+        "norway": "🇳🇴", "norwegian": "🇳🇴", "oslo": "🇳🇴",
+        "singapore": "🇸🇬", "singaporean": "🇸🇬",
+        "hong kong": "🇭🇰", "hongkong": "🇭🇰",
+        "thailand": "🇹🇭", "thai": "🇹🇭", "bangkok": "🇹🇭",
+        "vietnam": "🇻🇳", "vietnamese": "🇻🇳", "hanoi": "🇻🇳",
+        "malaysia": "🇲🇾", "malaysian": "🇲🇾", "kuala lumpur": "🇲🇾",
+        "argentina": "🇦🇷", "argentine": "🇦🇷", "buenos aires": "🇦🇷",
+        "chile": "🇨🇱", "chilean": "🇨🇱",
+        "colombia": "🇨🇴", "colombian": "🇨🇴",
+        "peru": "🇵🇪", "peruvian": "🇵🇪",
+        "el salvador": "🇸🇻", "elsalvador": "🇸🇻", "salvadoran": "🇸🇻", "bukele": "🇸🇻",
+    }
+
+    for country, flag in country_flags.items():
+        # Special improved handling for United States
+        if country in {"us", "u.s.", "u.s", "usa"}:
+            # Match "U.S.", "U.S", "US", "USA", "United States", etc.
+            if re.search(r"\bu\.?s\.?\b", lower) or re.search(r"\b(united states|america)\b", lower):
+                detected_flags.add(flag)
+                continue
+
+        # Normal detection for all other countries
+        if re.search(rf"\b{re.escape(country)}\b", lower, re.IGNORECASE):
+            detected_flags.add(flag)
+
+    if detected_flags:
+        flags_str = " ".join(sorted(detected_flags)) + " "
+        if any(text.upper().startswith(t) for t in ["JUST IN:", "BREAKING:", "ALERT:", "NEW:"]):
+            tag_end = text.find(": ") + 2
+            if tag_end > 2:
+                return text[:tag_end] + flags_str + text[tag_end:]
+        return flags_str + text
+
+    return text
+
+async def fetch_with_retry(session, url, params=None, max_retries=3, base_timeout=20):
+    """SUPER ROBUST INFINITE RETRY — never gives up on internet disconnect, slow connection, or server fault.
+    Keeps retrying forever with smart exponential backoff until the connection/server is restored.
+    The script will NEVER fail or stop."""
+    attempt = 0
+    delay = 2  # start with 2 seconds
+
+    while True:
+        attempt += 1
+        try:
+            # Progressive timeout (gets more generous on repeated attempts)
+            timeout = ClientTimeout(
+                total=base_timeout + (attempt * 5),   # 25s → 30s → 35s ...
+                sock_connect=15,
+                sock_read=30
+            )
+
+            async with session.get(
+                url,
+                params=params,
+                timeout=timeout,
+                ssl=False,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; ASPNewsBot/1.0)"}
+            ) as resp:
+
+                if resp.status != 200:
+                    raise ClientResponseError(resp.request_info, resp.history, status=resp.status)
+
+                data = await resp.json()
+
+                if attempt > 1:
+                    logger.warning("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    logger.warning(f"✅ CONNECTION RESTORED")
+                    logger.warning(f"Source: {url}")
+                    logger.warning(f"Recovered after {attempt} attempts")
+                    logger.warning("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                return data
+
+        except (asyncio.TimeoutError, ClientConnectorError, ServerTimeoutError, OSError,
+                ClientResponseError, ConnectionError, TimeoutError) as e:
+            logger.warning(f"🌐 Connection/Server issue on {url} (attempt {attempt}) — {type(e).__name__}: {str(e)[:150]}")
+            logger.warning(f"   Retrying in {delay} seconds... (will keep trying forever until restored)")
+
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 300)   # backoff: 2s → 4s → 8s ... max 5 minutes
+            continue
+
+        except Exception as e:
+            # Any other unexpected error — still retry forever (never crash)
+            logger.error(f"💥 Unexpected error on {url} (attempt {attempt}): {type(e).__name__} - {str(e)[:200]}")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 300)
+            continue
+
+async def get_album_messages(event):
+    if not event.message.grouped_id:
+        return [event.message]
+    album = []
+    async for msg in client.iter_messages(await event.get_input_chat(), limit=30, min_id=event.message.id-20, max_id=event.message.id+20):
+        if msg.grouped_id == event.message.grouped_id:
+            album.append(msg)
+    return sorted(album, key=lambda m: m.id)
+
+# ── AI rewrite ────────────────────────────────────────────────────────
+async def ai_rewrite(final_caption: str) -> str:
+    if not final_caption.strip() or len(final_caption) < 20:
+        return final_caption
+
+    original = final_caption
+
+    for provider in PROVIDERS:
+        try:
+            kwargs = {
+                "model": provider["model"],
+                "messages": [
+                    {"role": "system", "content": REWRITE_SYSTEM_PROMPT},
+                    {"role": "user",   "content": final_caption},
+                ],
+                "temperature": 0.15,          # lower = more stable
+                "max_tokens": 400,            # a bit more room
+                "top_p": 0.9,
+                "timeout": 10,
+            }
+
+            if provider["type"] == "openai":
+                kwargs["api_key"] = provider["api_key"]
+                kwargs["api_base"] = provider.get("base_url")
+            elif provider["type"] == "gemini":
+                kwargs["api_key"] = provider["api_key"]
+
+            response = await asyncio.to_thread(
+                completion,
+                **kwargs
+            )
+            rewritten = response.choices[0].message.content.strip()
+
+            # Clean markdown if any
+            if "```" in rewritten:
+                code_content = re.search(r'```(?:\w+)?\s*(.*?)\s*```', rewritten, re.DOTALL)
+                if code_content:
+                    rewritten = code_content.group(1).strip()
+
+            # === QUALITY CHECKS (this is the important part) ===
+            if not rewritten or len(rewritten) < 20:
+                logger.warning(f"{provider['name']} returned too short → skip")
+                continue
+
+            # Reject if it is drastically shorter than original (truncation detection)
+            if len(rewritten) < len(original) * 0.55:
+                logger.warning(f"{provider['name']} truncated output → skip")
+                continue
+
+            # Reject if it ends with incomplete words / mid-sentence
+            if re.search(r'[a-zA-Z]{3,}$', rewritten) and not rewritten.endswith(('.', '!', '?', '"', "'")):
+                # ends with a word but no proper punctuation → likely truncated
+                if len(rewritten.split()) < len(original.split()) * 0.7:
+                    logger.warning(f"{provider['name']} incomplete sentence → skip")
+                    continue
+
+            # Preserve leading tag if the model removed it
+            tag_match = re.match(r"^(JUST IN:|BREAKING:|ALERT:|NEW:)\s*", original, re.I)
+            if tag_match:
+                tag = tag_match.group(1)
+                if not rewritten.upper().startswith(tag.upper()):
+                    rewritten = tag + " " + rewritten.lstrip(tag).lstrip(": ").lstrip()
+
+            logger.info(f"AI rewrite success via {provider['name']}")
+            return rewritten
+
+        except Exception as e:
+            logger.warning(f"{provider['name']} failed: {str(e)[:150]}")
+            continue
+
+    logger.error("All AI providers failed → using original caption")
+    return original
+
+# Replace the entire fetch_and_forward() function with this simple one:
+async def keep_alive():
+    """Simple keep-alive loop when only using TG scraping"""
+    logger.info("Running in Telegram Scraping Only Mode")
+    while True:
+        await asyncio.sleep(60)   # Just keeps the script alive
+
+def is_important_crypto_or_news(text: str) -> bool:
+    if not text:
+        return False
+    lower = text.lower()
+    important = [
+        "bitcoin", "btc", "ethereum", "eth", "solana", "sol", "xrp", "bnb", "doge",
+        "sui", "ton", "ada", "avalanche", "chainlink", "whale", "liquidation",
+        "etf", "fed", "cpi", "sec", "gensler", "powell", "adoption", "approved"
+    ]
+    return any(kw in lower for kw in important)
+
+# ── TELEGRAM CHANNEL SCRAPER ────────────────────────────────────────
+
+async def process_and_forward_text(raw_text: str, unique_id: str, original_message=None):
+    global last_id
+    if unique_id in seen_ids:
+        return
+    if not raw_text or not raw_text.strip():
+        return
+
+    # === TRANSLATE FIRST ===
+    text_to_use = raw_text.strip()
+    try:
+        translated = MyMemoryTranslator(source='zh-CN', target='en-GB').translate(text_to_use)
+        text_to_use = translated
+        logger.debug(f"✅ Translated: {text_to_use[:150]}...")
+    except Exception as e:
+        logger.warning(f"Translation failed: {e}")
+        text_to_use = raw_text.strip()
+
+    cleaned = clean_message(text_to_use)
+    if not cleaned.strip():
+        return
+
+    if is_weird_message(cleaned):
+        logger.info(f"TG WEIRD BLOCKED → {cleaned[:80]}...")
+        seen_ids.add(unique_id)
+        return
+    
+    # === PRE-AI BLOCKS - PROHIBITED PHRASES ===
+    BLOCKED_PHRASES = [
+        r"-\s*Link",                    # ← Active: This is the main one you want
+        
+        # === Chinese patterns (for original messages) ===
+        # r"观点：",
+        # r"作者观点",
+        # r"仅供参考",
+        # r"风险提示",
+        
+        # === English patterns (after translation) ===
+        # r"korean", 
+        # r"viewpoint:",
+        # r"for reference only",
+        # r"this is just an opinion",
+        # r"not financial advice",
+    ]
+
+    if any(re.search(pattern, cleaned, re.IGNORECASE) for pattern in BLOCKED_PHRASES):
+        logger.info(f"TG BLOCKED PROHIBITED PHRASE → {cleaned[:120]}...")
+        seen_ids.add(unique_id)
+        return
+
+    # === NEW: AGGRESSIVE LONG MESSAGE BLOCKER ===
+    word_count = len(cleaned.split())
+    text_length = len(cleaned)
+    
+    if text_length > 160 or word_count > 30:
+        logger.info(f"⛔ LONG MESSAGE BLOCKED ({word_count} words, {text_length} chars) → {cleaned[:100]}...")
+        seen_ids.add(unique_id)
+        return
+
+    # === PRE-AI BLOCKS ===
+    BLOCKED_WORDS = ["buddy", "trader", "orders", "listing", "airdrop", "meme", "memecoin",
+                     "<em>", "</em>", "silver sparrow", "auntie ai"]
+    cleaned_lower = cleaned.lower()
+    if any(re.search(rf"\b{re.escape(word)}\b", cleaned_lower) for word in BLOCKED_WORDS):
+        logger.info(f"TG PRE-BLOCKED → {cleaned[:120]}...")
+        seen_ids.add(unique_id)
+        return
+
+    tagged = apply_smart_tagging(cleaned)
+
+    # === IMPROVED LOW QUALITY FILTER ===
+    has_tag = re.search(r"\b(JUST IN|BREAKING|ALERT|NEW):", tagged, re.IGNORECASE)
+    if not has_tag:
+        if is_important_crypto_or_news(tagged):
+            logger.info(f"IMPORTANT CRYPTO/NEWS ALLOWED: {cleaned[:100]}...")
+            if not tagged.upper().startswith(("JUST IN:", "BREAKING:", "ALERT:", "NEW:")):
+                tagged = "NEW: " + tagged
+        else:
+            logger.info(f"TG LOW QUALITY DROPPED → {cleaned[:100]}...")
+            seen_ids.add(unique_id)
+            return
+
+    # === AI Rewrite (Only short messages reach here) ===
+    final_caption = await ai_rewrite(tagged)
+
+    # === POST-AI CHECKS ===
+    if final_caption is None or len(final_caption) < 20:
+        logger.info(f"⛔ AI failed or empty → skipped")
+        seen_ids.add(unique_id)
+        return
+
+    final_lower = final_caption.lower()
+    if any(re.search(rf"\b{re.escape(word)}\b", final_lower) for word in BLOCKED_WORDS):
+        logger.info(f"POST-AI BLOCKED → {final_caption[:150]}...")
+        seen_ids.add(unique_id)
+        return
+
+    final_caption = add_country_flags(final_caption)
+
+    # === SEND ===
+    if original_message and original_message.video:
+        await client.send_file(
+            DESTINATION_CHANNEL, original_message.video,
+            caption=final_caption, parse_mode='md', supports_streaming=True
+        )
+    else:
+        figures = get_matching_images(final_caption)
+        if figures:
+            await client.send_file(
+                DESTINATION_CHANNEL, [p.as_posix() for p in figures],
+                caption=final_caption, parse_mode='md'
+            )
+        else:
+            await client.send_message(DESTINATION_CHANNEL, final_caption, parse_mode='md')
+
+    store_message_in_file(final_caption)
+    seen_ids.add(unique_id)
+    with open(SEEN_CACHE_FILE, 'a', encoding='utf-8') as f:
+        f.write(unique_id + '\n')
+
+    logger.info(f"✅ FORWARDED: {final_caption[:130]}...")
+
+async def tg_scraper_startup_fetch():
+    """
+    Optional: fetch last N messages per source channel at startup.
+    """
+    if not TG_FETCH_OLD_ON_START:
+        return
+
+    logger.info("TG Startup Catch-Up Enabled")
+
+    for channel in TG_SOURCE_CHANNELS:
+        try:
+            async for msg in client.iter_messages(channel, limit=TG_OLD_LIMIT):
+                if msg.text:
+                    unique_id = f"tg_{channel}_{msg.id}"
+                    await process_and_forward_text(msg.text, unique_id)
+                    await asyncio.sleep(0.8)
+
+        except Exception as e:
+            logger.warning(f"TG startup fetch failed for {channel}: {e}")
+
+
+def register_tg_listeners():
+    """
+    Live Telegram listener using events.
+    """
+    if not ENABLE_TG_SCRAPING:
+        return
+    from telethon import events
+    from telethon.tl.types import MessageMediaDocument, DocumentAttributeVideo
+
+    @client.on(events.NewMessage(chats=TG_SOURCE_CHANNELS))
+    async def handler(event):
+        try:
+            if not event.message:
+                return
+
+            # ==================== ANTI-FLOOD PROTECTION ====================
+            if event.message.date:
+                message_age = (datetime.now(timezone.utc) - event.message.date).total_seconds()
+               
+                if message_age > 600:  # Ignore messages older than 10 minutes
+                    if not hasattr(handler, 'old_count'):
+                        handler.old_count = 0
+                    handler.old_count += 1
+                   
+                    if handler.old_count % 25 == 0:
+                        logger.warning(f"Server sent very old message with ID {event.message.id}, ignoring (age: {message_age:.0f}s)")
+                    return
+
+            # Reset counter when fresh messages arrive
+            if hasattr(handler, 'old_count'):
+                handler.old_count = 0
+            # =====================================================================
+
+            if not event.message:
+                return
+
+            # === SPECIAL HANDLING FOR SPECIFIC CHANNELS ===
+            if event.chat and event.chat.username:
+                username_lower = event.chat.username.lower().strip("@")
+                
+                # Video-only channels (only forward videos)
+                video_only_channels = {"watcherguru"}
+                if username_lower in video_only_channels:
+                    has_video = bool(event.message.video) or (
+                        event.message.media and isinstance(event.message.media, MessageMediaDocument) and
+                        any(isinstance(attr, DocumentAttributeVideo) or
+                            (getattr(event.message.media.document, 'mime_type', '') or '').startswith("video/")
+                            for attr in getattr(event.message.media.document, 'attributes', []))
+                    )
+                    if not has_video:
+                        logger.info(f"Blocked non-video message from @{event.chat.username}")
+                        return
+                
+                # Channels where we forward ALL content
+                elif username_lower in {"theblockbeats", "newslivestream"}:
+                    logger.info(f"Exception applied: forwarding all content from @{event.chat.username} (ID: {event.message.id})")
+
+            # === Original text extraction ===
+            raw_text = (
+                event.message.raw_text
+                or event.message.text
+                or event.message.message
+                or ""
+            )
+            if event.message.media and event.message.message:
+                raw_text = event.message.message
+
+            unique_id = f"tg_{event.chat_id}_{event.message.id}"
+            await process_and_forward_text(raw_text, unique_id, original_message=event.message)
+
+        except Exception as e:
+            logger.error(f"TG live handler error: {e}", exc_info=True)        
+
+async def main():
+    await client.start()
+
+    logger.info("AlphaSignalsPro – Telegram Scraping Mode ACTIVE (BlockBeats Removed)")
+
+    if ENABLE_TG_SCRAPING:
+        register_tg_listeners()
+        await tg_scraper_startup_fetch()
+
+    # Run simple keep-alive instead of API loop
+    await keep_alive()
+
+if __name__ == "__main__":
+    from telethon import TelegramClient
+    client = TelegramClient('session_name812237', 20919525, '3b9e4712ff818c18d9c122ad7c7379a9')
+    asyncio.run(main())
