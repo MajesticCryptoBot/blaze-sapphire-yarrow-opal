@@ -1,15 +1,14 @@
 // @ts-check
 /**
- * Migration bookkeeping shared by the two appliers — `scripts/migrate.mjs`
- * (deploy, `readdir`) and `src/lib/db.ts` (PGLite preview, `import.meta.glob`).
+ * Migration bookkeeping shared by the deploy and PGLite appliers.
  *
- * Applied files are keyed by BASENAME, so the same file applies once no matter
- * which directory it is globbed from. That is what makes the auth schema safe to
- * copy from `migrations/auth/` into `migrations/` when an app turns sign-in on:
- * a database that already has `0001_auth.sql` will not re-run it.
+ * Auth is intentionally opt-in. When VITE_AUTH_ENABLED is not "false", the
+ * migration under migrations/auth/ is included automatically. When auth is
+ * explicitly disabled, auth tables are not created.
  *
- * Neither applier descends into subdirectories, so `migrations/auth/*.sql` is
- * out of scope for both until it is copied up.
+ * Applied files are keyed by BASENAME, so the same migration applies once even
+ * if its path changes. This keeps the deploy and PGLite migration ledgers in
+ * sync while allowing optional migrations to live in subdirectories.
  */
 
 /**
@@ -30,16 +29,33 @@ export function isMigrationFile(path) {
 }
 
 /**
+ * Whether this migration is enabled by the current application configuration.
+ * Auth migrations are opt-in so a project with VITE_AUTH_ENABLED=false keeps
+ * the lightweight dev database and does not create Better Auth tables.
+ * @param {string} path
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function isMigrationEnabled(path, env = process.env) {
+  if (!isMigrationFile(path)) return false;
+  if (path.startsWith("auth/") || path.includes("/auth/")) {
+    return env.VITE_AUTH_ENABLED !== "false";
+  }
+  return true;
+}
+
+/**
  * Migrations in `paths` that are not yet in `applied`, in apply order.
- * Non-`.sql` entries (a `readdir` also yields `migrations/auth/`) are dropped.
+ * Paths may be nested (for example `auth/0001_auth.sql`).
  * @param {Iterable<string>} paths
  * @param {Iterable<string>} applied
+ * @param {Record<string, string | undefined>} [env]
  * @returns {Array<{ name: string, path: string }>}
  */
-export function pendingMigrations(paths, applied) {
+export function pendingMigrations(paths, applied, env = process.env) {
   const done = new Set(applied);
   return [...paths]
-    .filter(isMigrationFile)
+    .filter((path) => isMigrationEnabled(path, env))
     .map((path) => ({ name: migrationName(path), path }))
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter(({ name }) => !done.has(name));
