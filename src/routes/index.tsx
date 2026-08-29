@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { Input } from "@/components/ui/input";
+import { LiveWire } from "@/components/live-wire";
 import { ARTICLES, CATEGORIES } from "@/lib/news";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +46,9 @@ function Home() {
         </p>
       </section>
 
-      <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <LiveWire />
+
+      <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
           <Input
