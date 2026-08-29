@@ -1,28 +1,28 @@
+import { getSql } from "../../src/lib/db";
+
 export default async function handler(event: { url: URL }) {
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
-  if (!token) return new Response("Telegram bot is not configured", { status: 503 });
-
-  const fileId = event.url.searchParams.get("file_id");
-  if (!fileId) return new Response("Missing file_id", { status: 400 });
-
-  const response = await fetch(
-    `https://api.telegram.org/bot${encodeURIComponent(token)}/getFile?file_id=${encodeURIComponent(fileId)}`,
-  );
-  if (!response.ok) return new Response("Telegram file lookup failed", { status: 502 });
-
-  const payload = (await response.json()) as {
-    ok?: boolean;
-    result?: { file_path?: string };
-  };
-  if (!payload.ok || !payload.result?.file_path) {
-    return new Response("Telegram file is unavailable", { status: 404 });
+  const messageId = Number(event.url.searchParams.get("id"));
+  if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+    return new Response("Missing or invalid id", { status: 400 });
   }
 
-  const media = await fetch(`https://api.telegram.org/file/bot${token}/${payload.result.file_path}`);
-  if (!media.ok || !media.body) return new Response("Telegram media fetch failed", { status: 502 });
+  const sql = await getSql();
+  const rows = await sql.query<{ photo_data: Buffer | Uint8Array | null; photo_mime_type: string | null }>(
+    `select photo_data, photo_mime_type
+       from telegram_posts
+      where message_id = $1
+        and lower(replace(coalesce(chat_username, ''), '@', '')) = 'alphasignalspro'
+      order by published_at desc
+      limit 1`,
+    [messageId],
+  );
 
+  const row = rows[0];
+  if (!row?.photo_data) return new Response("Photo not found", { status: 404 });
+
+  const body = row.photo_data instanceof Uint8Array ? row.photo_data : new Uint8Array(row.photo_data);
   const headers = new Headers();
-  headers.set("Content-Type", media.headers.get("content-type") ?? "image/jpeg");
-  headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-  return new Response(media.body, { status: 200, headers });
+  headers.set("Content-Type", row.photo_mime_type ?? "image/jpeg");
+  headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  return new Response(body, { status: 200, headers });
 }
