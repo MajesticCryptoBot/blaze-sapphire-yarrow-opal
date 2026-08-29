@@ -1,6 +1,6 @@
 import { getSql } from "../../src/lib/db";
 
-const CHANNEL = (process.env.TELEGRAM_CHANNEL_USERNAME ?? "AlphaSignalsPro").replace(/^@/, "").toLowerCase();
+const CHANNEL = "alphasignalspro";
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export default async function handler() {
@@ -9,17 +9,15 @@ export default async function handler() {
 
   const rows = await sql.query<{
     message_id: number | string;
-    chat_username: string | null;
-    chat_title: string | null;
     text: string;
     published_at: string;
-    photo_file_id: string | null;
+    photo_data: Buffer | Uint8Array | null;
     message_url: string | null;
   }>(
-    `select message_id, chat_username, chat_title, text, published_at, photo_file_id, message_url
+    `select message_id, text, published_at, photo_data, message_url
        from telegram_posts
       where published_at >= $1
-        and (lower(coalesce(chat_username, '')) = $2 or lower(coalesce(chat_username, '')) = ('@' || $2))
+        and lower(replace(coalesce(chat_username, ''), '@', '')) = $2
       order by published_at desc
       limit 100`,
     [cutoff, CHANNEL],
@@ -31,7 +29,7 @@ export default async function handler() {
       id: Number(row.message_id),
       text: row.text,
       publishedAt: row.published_at,
-      photoFileId: row.photo_file_id,
+      hasPhoto: Boolean(row.photo_data),
       messageUrl: row.message_url,
     })),
     fetchedAt: new Date().toISOString(),
