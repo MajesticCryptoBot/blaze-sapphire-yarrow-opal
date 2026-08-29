@@ -5,7 +5,7 @@ type TelegramPost = {
   id: number;
   text: string;
   publishedAt: string;
-  photoFileId: string | null;
+  hasPhoto: boolean;
   messageUrl: string | null;
 };
 
@@ -103,14 +103,14 @@ export function LiveWire() {
         {newsError ? (
           <p className="py-6 text-sm text-muted">Live wire is temporarily unavailable.</p>
         ) : posts.length === 0 ? (
-          <p className="py-6 text-sm text-muted">Waiting for the first Telegram posts.</p>
+          <p className="py-6 text-sm text-muted">No posts from the last 24 hours.</p>
         ) : (
           <div className="divide-y divide-border">
             {posts.map((post) => (
               <article key={post.id} className="py-5 first:pt-5 last:pb-1">
-                {post.photoFileId ? (
+                {post.hasPhoto ? (
                   <img
-                    src={`/api/telegram-photo?file_id=${encodeURIComponent(post.photoFileId)}`}
+                    src={`/api/telegram-photo?id=${post.id}`}
                     alt=""
                     loading="lazy"
                     className="mb-4 max-h-80 w-full rounded-md object-cover"
