@@ -4,18 +4,20 @@ function normalizeUsername(value: string | undefined | null) {
   return (value ?? "").replace(/^@/, "").toLowerCase();
 }
 
-export default async function handler(event: Request) {
+export default async function handler(event: {
+  req: { headers: Headers; json: () => Promise<unknown> };
+}) {
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
   if (!expectedSecret) {
     return Response.json({ error: "TELEGRAM_WEBHOOK_SECRET is not configured" }, { status: 503 });
   }
 
-  const suppliedSecret = event.headers.get("x-telegram-bot-api-secret-token");
+  const suppliedSecret = event.req.headers.get("x-telegram-bot-api-secret-token");
   if (suppliedSecret !== expectedSecret) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const update = (await event.json()) as {
+  const update = (await event.req.json()) as {
     channel_post?: TelegramMessage;
     edited_channel_post?: TelegramMessage;
   };
@@ -62,9 +64,7 @@ export default async function handler(event: Request) {
     ],
   );
 
-  // Keep the database focused on the requested 24-hour live wire.
   await sql.query("delete from telegram_posts where published_at < now() - interval '48 hours'");
-
   return Response.json({ ok: true });
 }
 
