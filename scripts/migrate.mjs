@@ -2,19 +2,18 @@
 /**
  * Deploy-time database migrator (node-postgres, `pg`).
  *
- * Runs during `npm run build` — on every Vercel deploy — applying pending files
- * in ../migrations to DATABASE_URL. Each file is applied in one transaction and
- * recorded in a `_migrations` table, so it runs once and is safe to re-run.
+ * Runs during `npm run build` — on every Vercel deploy — applying pending SQL
+ * files under ../migrations to DATABASE_URL. Files may live in subdirectories
+ * (currently migrations/auth/). Each file is applied in one transaction and
+ * recorded in `_migrations`, so it runs once and is safe to re-run.
  *
- * The read is non-recursive, so the opt-in auth schema under migrations/auth/
- * is not applied to an app that never asked for sign-in.
- *
+ * Auth migrations are included only when VITE_AUTH_ENABLED is not "false".
  * No DATABASE_URL (local / preview builds) -> skip; the PGLite fallback applies
- * the same files at startup instead (see src/lib/db.ts).
+ * the same enabled files at startup instead (see src/lib/db.ts).
  */
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import pg from "pg";
 import { pendingMigrations } from "./migration-plan.mjs";
 
@@ -28,17 +27,32 @@ if (!databaseUrl) {
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
+/** Recursively collect migration files as paths relative to migrations/. */
+async function collectMigrationFiles(dir = migrationsDir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const absolute = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectMigrationFiles(absolute)));
+    } else if (entry.isFile() && entry.name.endsWith(".sql")) {
+      files.push(relative(migrationsDir, absolute).replaceAll("\\", "/"));
+    }
+  }
+  return files;
+}
+
 async function main() {
   let entries;
   try {
-    entries = await readdir(migrationsDir);
+    entries = await collectMigrationFiles();
   } catch {
     console.log("[migrate] no migrations/ directory — nothing to do.");
     return;
   }
-  // An app with no schema of its own must not pay for a database connection.
+
   if (pendingMigrations(entries, []).length === 0) {
-    console.log("[migrate] no migrations — nothing to do.");
+    console.log("[migrate] no enabled migrations — nothing to do.");
     return;
   }
 
@@ -53,16 +67,15 @@ async function main() {
     );
 
     let count = 0;
-    for (const { name } of pendingMigrations(entries, applied)) {
-      const text = await readFile(join(migrationsDir, name), "utf8");
+    for (const { name, path } of pendingMigrations(entries, applied)) {
+      const text = await readFile(join(migrationsDir, path), "utf8");
       try {
         await client.query("BEGIN");
-        // pg's simple-query protocol runs a whole multi-statement file at once.
         await client.query(text);
         await client.query("INSERT INTO _migrations (name) VALUES ($1)", [name]);
         await client.query("COMMIT");
       } catch (err) {
-        console.error(`[migrate] error applying ${name}`);
+        console.error(`[migrate] error applying ${path}`);
         try {
           await client.query("ROLLBACK");
         } catch {
@@ -70,7 +83,7 @@ async function main() {
         }
         throw err;
       }
-      console.log(`[migrate] applied ${name}`);
+      console.log(`[migrate] applied ${path}`);
       count += 1;
     }
     console.log(count ? `[migrate] done — ${count} migration(s) applied.` : "[migrate] up to date.");
@@ -82,7 +95,6 @@ async function main() {
 
 main().catch((err) => {
   console.error("[migrate] failed:", err?.message || err);
-  // pg errors carry the context needed to debug a bad SQL file.
   for (const key of ["code", "detail", "hint", "position", "where"]) {
     if (err?.[key] != null) console.error(`[migrate]   ${key}: ${err[key]}`);
   }
