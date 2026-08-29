@@ -1,8 +1,8 @@
-export default async function handler(event: Request) {
+export default async function handler(event: { url: URL }) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return new Response("Telegram bot is not configured", { status: 503 });
 
-  const fileId = new URL(event.url).searchParams.get("file_id");
+  const fileId = event.url.searchParams.get("file_id");
   if (!fileId) return new Response("Missing file_id", { status: 400 });
 
   const response = await fetch(
