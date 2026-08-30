@@ -1,11 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-// This endpoint is authenticated by WEBSITE_INGEST_SECRET.
-// The destination is intentionally fixed here because the only intended
-// publisher is the user's local ASP script for AlphaSignalsPro.
+// Production diagnostic marker. This lets us prove which source is serving
+// /api/news-ingest instead of relying on a generic HTTP status.
+const INGEST_VERSION = "ASP-INGEST-V6-20260830";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
+
+function response(body: unknown, status = 200): Response {
+  return Response.json(body, {
+    status,
+    headers: {
+      "x-asp-ingest-version": INGEST_VERSION,
+      "cache-control": "no-store",
+    },
+  });
+}
 
 function sameSecret(request: Request): boolean {
   const configured = process.env.WEBSITE_INGEST_SECRET?.trim();
@@ -17,9 +27,17 @@ function sameSecret(request: Request): boolean {
 export const Route = createFileRoute("/api/news-ingest")({
   server: {
     handlers: {
+      GET: async () =>
+        response({
+          ok: true,
+          service: "news-ingest",
+          version: INGEST_VERSION,
+          channel: CANONICAL_CHANNEL,
+        }),
+
       POST: async ({ request }) => {
         if (!sameSecret(request)) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
+          return response({ error: "Unauthorized", version: INGEST_VERSION }, 401);
         }
 
         let body: {
@@ -35,27 +53,30 @@ export const Route = createFileRoute("/api/news-ingest")({
         try {
           body = await request.json();
         } catch {
-          return Response.json({ error: "Invalid JSON" }, { status: 400 });
+          return response({ error: "Invalid JSON", version: INGEST_VERSION }, 400);
         }
 
         const messageId = Number(body.messageId);
         const text = typeof body.text === "string" ? body.text : "";
         const publishedAt = new Date(String(body.publishedAt ?? ""));
+        const receivedChannel = typeof body.channelUsername === "string"
+          ? body.channelUsername.trim().replace(/^@/, "")
+          : "";
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
-          return Response.json({ error: "messageId must be a positive integer" }, { status: 400 });
+          return response({ error: "messageId must be a positive integer", version: INGEST_VERSION }, 400);
         }
         if (Number.isNaN(publishedAt.getTime())) {
-          return Response.json({ error: "Invalid publishedAt" }, { status: 400 });
+          return response({ error: "Invalid publishedAt", version: INGEST_VERSION }, 400);
         }
 
         const photoBase64 = body.photoBase64?.trim() || null;
         if (photoBase64 && photoBase64.length > MAX_PHOTO_BASE64) {
-          return Response.json({ error: "Photo is too large" }, { status: 413 });
+          return response({ error: "Photo is too large", version: INGEST_VERSION }, 413);
         }
 
         // The authenticated publisher is permanently associated with
-        // AlphaSignalsPro. Do not validate or trust a caller-supplied channel.
+        // AlphaSignalsPro. The caller-supplied channel is diagnostic only.
         const channel = CANONICAL_CHANNEL;
 
         const sql = await getSql();
@@ -82,9 +103,13 @@ export const Route = createFileRoute("/api/news-ingest")({
           ],
         );
 
-        // Retention is no longer tied to 24 hours. The public feed simply
-        // returns the newest posts, so historical rows can remain in storage.
-        return Response.json({ ok: true, messageId });
+        return response({
+          ok: true,
+          messageId,
+          version: INGEST_VERSION,
+          channel: CANONICAL_CHANNEL,
+          receivedChannel,
+        });
       },
     },
   },
