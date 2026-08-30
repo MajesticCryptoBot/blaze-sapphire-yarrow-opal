@@ -14,6 +14,7 @@ type CacheState = { expiresAt: number; data: Market[] };
 const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
 
 type CmcQuote = {
+  symbol?: string;
   price?: number;
   percent_change_24h?: number;
   last_updated?: string;
@@ -23,16 +24,28 @@ type CmcAsset = {
   id: number;
   name: string;
   symbol: string;
-  quote?: { USD?: CmcQuote };
+  quote?: CmcQuote[] | { USD?: CmcQuote };
 };
 
 type CmcPayload = {
   data?: Record<string, CmcAsset> | CmcAsset[];
+  status?: {
+    error_code?: number | string;
+    error_message?: string | null;
+  };
 };
+
+function getUsdQuote(asset: CmcAsset): CmcQuote | undefined {
+  const quote = asset.quote;
+  if (Array.isArray(quote)) {
+    return quote.find((item) => item.symbol === "USD");
+  }
+  return quote?.USD;
+}
 
 async function fetchMarkets(): Promise<Market[]> {
   const apiKey = process.env.CMC_API_KEY?.trim();
-  if (!apiKey) throw new Error("CMC_API_KEY is not configured");
+  if (!apiKey) throw new Error("CMC_API_KEY is not configured in the server environment");
 
   const url = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
   url.searchParams.set("id", ASSETS.map((asset) => asset.id).join(","));
@@ -43,11 +56,21 @@ async function fetchMarkets(): Promise<Market[]> {
     cache: "no-store",
   });
 
-  if (!response.ok) {
-    throw new Error(`CoinMarketCap HTTP ${response.status}`);
+  const rawText = await response.text();
+  let payload: CmcPayload = {};
+  try {
+    payload = JSON.parse(rawText) as CmcPayload;
+  } catch {
+    throw new Error(`CoinMarketCap returned non-JSON HTTP ${response.status}`);
   }
 
-  const payload = (await response.json()) as CmcPayload;
+  const errorCode = payload.status?.error_code;
+  const errorMessage = payload.status?.error_message;
+  if (!response.ok || (errorCode !== undefined && String(errorCode) !== "0")) {
+    const detail = errorMessage ? `: ${errorMessage}` : "";
+    throw new Error(`CoinMarketCap HTTP ${response.status}${errorCode !== undefined ? ` (code ${errorCode})` : ""}${detail}`);
+  }
+
   const rawData = payload.data ?? {};
   const assets = Array.isArray(rawData) ? rawData : Object.values(rawData);
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
@@ -55,7 +78,7 @@ async function fetchMarkets(): Promise<Market[]> {
 
   for (const asset of ASSETS) {
     const coin = byId.get(asset.id);
-    const quote = coin?.quote?.USD;
+    const quote = coin ? getUsdQuote(coin) : undefined;
 
     if (!coin || typeof quote?.price !== "number") continue;
 
@@ -105,7 +128,7 @@ export const Route = createFileRoute("/api/market-prices")({
             );
           }
 
-          console.error("[market-prices]", error);
+          console.error("[market-prices]", error instanceof Error ? error.message : error);
           return Response.json(
             { error: "Market data is temporarily unavailable" },
             { status: 503 },
