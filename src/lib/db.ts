@@ -6,7 +6,7 @@ export type DbSource = "neon" | "pglite";
 const rawDatabaseUrl =
   typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 const databaseUrl =
-  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl.trim() : undefined;
 const isVercel = typeof process !== "undefined" && process.env.VERCEL === "1";
 
 // PGlite is useful for local development, but an ephemeral serverless runtime is
@@ -59,13 +59,34 @@ function toSql(run: Run): Sql {
   return sql;
 }
 
+function getNeonConnectionConfig() {
+  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+
+  // node-postgres warns when libpq-style sslmode=require is present in a
+  // connection string. Neon already requires TLS, so remove the sslmode query
+  // parameter and express the TLS requirement explicitly. This avoids the
+  // warning while retaining certificate verification through Node's CA store.
+  const url = new URL(databaseUrl);
+  url.searchParams.delete("sslmode");
+  url.searchParams.delete("sslcert");
+  url.searchParams.delete("sslkey");
+  url.searchParams.delete("sslrootcert");
+
+  return {
+    connectionString: url.toString(),
+    ssl: { rejectUnauthorized: true },
+  };
+}
+
 function createNeonSql(): Promise<Sql> {
   globalRef.__pgSqlPromise__ ??= (async () => {
     const { Pool, types } = await import("pg");
     types.setTypeParser(OID_INT8, Number);
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
-    const pool = new Pool({ connectionString: databaseUrl });
+
+    const pool = new Pool(getNeonConnectionConfig());
+
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
       return res.rows as T[];
@@ -74,6 +95,7 @@ function createNeonSql(): Promise<Sql> {
     globalRef.__pgSqlPromise__ = undefined;
     throw err;
   });
+
   return globalRef.__pgSqlPromise__;
 }
 
@@ -96,6 +118,7 @@ async function createPgliteSql(): Promise<Sql> {
     globalRef.__pgliteInstance__ = undefined;
     throw err;
   });
+
   const pg = await globalRef.__pgliteInstance__;
 
   const migrate = async (): Promise<void> => {
@@ -115,6 +138,7 @@ async function createPgliteSql(): Promise<Sql> {
       });
     }
   };
+
   const pass = (globalRef.__pgliteMigrateChain__ ?? Promise.resolve())
     .catch(() => undefined)
     .then(migrate);
