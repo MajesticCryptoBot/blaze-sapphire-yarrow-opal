@@ -1,19 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-const CHANNEL = (process.env.TELEGRAM_CHANNEL_USERNAME || "AlphaSignalsPro").trim().replace(/^@/, "").replace(/^https?:\/\/t\.me\//i, "").replace(/\/$/, "");
+// This endpoint is authenticated by WEBSITE_INGEST_SECRET.
+// The destination is intentionally fixed here because the only intended
+// publisher is the user's local ASP script for AlphaSignalsPro.
+const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function normalizeChannel(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .replace(/^@/, "")
-    .replace(/^https?:\/\/t\.me\//i, "")
-    .replace(/^t\.me\//i, "")
-    .replace(/\/$/, "")
-    .toLowerCase();
-}
 
 function sameSecret(request: Request): boolean {
   const configured = process.env.WEBSITE_INGEST_SECRET?.trim();
@@ -49,18 +42,14 @@ export const Route = createFileRoute("/api/news-ingest")({
         const messageId = Number(body.messageId);
         const text = typeof body.text === "string" ? body.text : "";
         const publishedAt = new Date(String(body.publishedAt ?? ""));
-        const channel = normalizeChannel(body.channelUsername || CHANNEL);
-        const configuredChannel = normalizeChannel(CHANNEL);
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
           return Response.json({ error: "messageId must be a positive integer" }, { status: 400 });
         }
-        if (!channel || channel !== configuredChannel) {
-          return Response.json({ error: "Wrong channel", expected: configuredChannel, received: channel }, { status: 403 });
-        }
         if (Number.isNaN(publishedAt.getTime())) {
           return Response.json({ error: "Invalid publishedAt" }, { status: 400 });
         }
+
         const age = Date.now() - publishedAt.getTime();
         if (age > DAY_MS || age < -5 * 60_000) {
           return Response.json({ error: "Post is outside the accepted time window" }, { status: 400 });
@@ -70,6 +59,11 @@ export const Route = createFileRoute("/api/news-ingest")({
         if (photoBase64 && photoBase64.length > MAX_PHOTO_BASE64) {
           return Response.json({ error: "Photo is too large" }, { status: 413 });
         }
+
+        // Do not trust the caller-provided channel string for storage or routing.
+        // Authentication already restricts this endpoint to our ASP publisher,
+        // and the website feed is permanently associated with AlphaSignalsPro.
+        const channel = CANONICAL_CHANNEL;
 
         const sql = await getSql();
         await sql.query(
@@ -91,7 +85,7 @@ export const Route = createFileRoute("/api/news-ingest")({
             publishedAt.toISOString(),
             photoBase64,
             body.photoMimeType || null,
-            body.messageUrl || null,
+            body.messageUrl || `https://t.me/${channel}/${messageId}`,
           ],
         );
 
