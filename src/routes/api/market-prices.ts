@@ -1,17 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
-const SYMBOL_TO_NAME: Record<string, string> = {
-  BTC: "Bitcoin",
-  ETH: "Ethereum",
-  XRP: "XRP",
-  SOL: "Solana",
-  BNB: "BNB",
-};
+const ASSETS = [
+  { id: 1, symbol: "BTC", name: "Bitcoin" },
+  { id: 1027, symbol: "ETH", name: "Ethereum" },
+  { id: 52, symbol: "XRP", name: "XRP" },
+  { id: 5426, symbol: "SOL", name: "Solana" },
+  { id: 1839, symbol: "BNB", name: "BNB" },
+] as const;
 const CACHE_TTL_MS = 180_000;
 
 type Market = { symbol: string; name: string; price: number; change24h: number; lastUpdated: string };
-
 type CacheState = { expiresAt: number; data: Market[] };
 const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
 
@@ -19,9 +17,10 @@ async function fetchMarkets(): Promise<Market[]> {
   const apiKey = process.env.CMC_API_KEY?.trim();
   if (!apiKey) throw new Error("CMC_API_KEY is not configured");
 
-  const url = new URL("https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest");
-  url.searchParams.set("symbol", SYMBOLS.join(","));
+  const url = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
+  url.searchParams.set("id", ASSETS.map((asset) => asset.id).join(","));
   url.searchParams.set("convert", "USD");
+  url.searchParams.set("skip_invalid", "true");
 
   const response = await fetch(url, {
     headers: { "X-CMC_PRO_API_KEY": apiKey, Accept: "application/json" },
@@ -30,23 +29,39 @@ async function fetchMarkets(): Promise<Market[]> {
   if (!response.ok) throw new Error(`CoinMarketCap HTTP ${response.status}`);
 
   const payload = (await response.json()) as {
-    data?: Record<string, Array<{ symbol: string; name: string; quote?: { USD?: { price?: number; percent_change_24h?: number; last_updated?: string } } }>>;
+    data?: Array<{
+      id: number;
+      name: string;
+      symbol: string;
+      quote?: Array<{
+        USD?: {
+          price?: number;
+          percent_change_24h?: number;
+          last_updated?: string;
+        };
+      }>;
+    }>;
   };
 
+  const byId = new Map((payload.data ?? []).map((asset) => [asset.id, asset]));
   const data: Market[] = [];
-  for (const symbol of SYMBOLS) {
-    const coin = payload.data?.[symbol]?.[0];
-    const quote = coin?.quote?.USD;
+
+  for (const asset of ASSETS) {
+    const coin = byId.get(asset.id);
+    const quote = coin?.quote?.[0]?.USD;
     if (!coin || typeof quote?.price !== "number") continue;
     data.push({
-      symbol,
-      name: SYMBOL_TO_NAME[symbol],
+      symbol: asset.symbol,
+      name: asset.name,
       price: quote.price,
       change24h: typeof quote.percent_change_24h === "number" ? quote.percent_change_24h : 0,
       lastUpdated: quote.last_updated ?? new Date().toISOString(),
     });
   }
-  if (data.length !== SYMBOLS.length) throw new Error("CoinMarketCap returned incomplete market data");
+
+  if (data.length !== ASSETS.length) {
+    throw new Error(`CoinMarketCap returned ${data.length}/${ASSETS.length} requested assets`);
+  }
   return data;
 }
 
