@@ -6,7 +6,6 @@ import { getSql } from "@/lib/db";
 // publisher is the user's local ASP script for AlphaSignalsPro.
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function sameSecret(request: Request): boolean {
   const configured = process.env.WEBSITE_INGEST_SECRET?.trim();
@@ -50,19 +49,13 @@ export const Route = createFileRoute("/api/news-ingest")({
           return Response.json({ error: "Invalid publishedAt" }, { status: 400 });
         }
 
-        const age = Date.now() - publishedAt.getTime();
-        if (age > DAY_MS || age < -5 * 60_000) {
-          return Response.json({ error: "Post is outside the accepted time window" }, { status: 400 });
-        }
-
         const photoBase64 = body.photoBase64?.trim() || null;
         if (photoBase64 && photoBase64.length > MAX_PHOTO_BASE64) {
           return Response.json({ error: "Photo is too large" }, { status: 413 });
         }
 
-        // Do not trust the caller-provided channel string for storage or routing.
-        // Authentication already restricts this endpoint to our ASP publisher,
-        // and the website feed is permanently associated with AlphaSignalsPro.
+        // The authenticated publisher is permanently associated with
+        // AlphaSignalsPro. Do not validate or trust a caller-supplied channel.
         const channel = CANONICAL_CHANNEL;
 
         const sql = await getSql();
@@ -89,8 +82,8 @@ export const Route = createFileRoute("/api/news-ingest")({
           ],
         );
 
-        await sql.query(`delete from telegram_posts where published_at < now() - interval '24 hours'`);
-
+        // Retention is no longer tied to 24 hours. The public feed simply
+        // returns the newest posts, so historical rows can remain in storage.
         return Response.json({ ok: true, messageId });
       },
     },
