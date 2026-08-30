@@ -7,6 +7,17 @@ const rawDatabaseUrl =
   typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 const databaseUrl =
   rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
+const isVercel = typeof process !== "undefined" && process.env.VERCEL === "1";
+
+// PGlite is useful for local development, but an ephemeral serverless runtime is
+// not a safe production database. In particular, falling back to PGlite on
+// Vercel can trigger missing pglite.data assets and would also lose writes when
+// the function is recycled. Production therefore requires DATABASE_URL.
+if (isVercel && !databaseUrl) {
+  throw new Error(
+    "DATABASE_URL is required on Vercel. Configure a persistent PostgreSQL database (for example Neon) in the Vercel project environment variables; PGlite is only a local-development fallback.",
+  );
+}
 
 export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
 
@@ -69,7 +80,7 @@ function createNeonSql(): Promise<Sql> {
 async function createPgliteSql(): Promise<Sql> {
   globalRef.__pgliteInstance__ ??= (async () => {
     const { PGlite } = await import("@electric-sql/pglite");
-    const pg = new PGlite({
+    const pg = new PGlite("memory://", {
       parsers: {
         [OID_INT8]: Number,
         [OID_DATE]: identity,
