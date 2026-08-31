@@ -13,49 +13,21 @@ type Market = { symbol: string; name: string; price: number; change24h: number; 
 type CacheState = { expiresAt: number; data: Market[] };
 const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
 
-type CmcQuote = {
-  symbol?: string;
-  price?: number;
-  percent_change_24h?: number;
-  last_updated?: string;
-};
-
-type CmcAsset = {
-  id: number;
-  name: string;
-  symbol: string;
-  quote?: CmcQuote[] | { USD?: CmcQuote };
-};
-
-type CmcPayload = {
-  data?: Record<string, CmcAsset> | CmcAsset[];
-  status?: {
-    error_code?: number | string;
-    error_message?: string | null;
-  };
-};
+type CmcQuote = { symbol?: string; price?: number; percent_change_24h?: number; last_updated?: string };
+type CmcAsset = { id: number; name: string; symbol: string; quote?: CmcQuote[] | { USD?: CmcQuote } };
+type CmcPayload = { data?: Record<string, CmcAsset> | CmcAsset[]; status?: { error_code?: number | string; error_message?: string | null } };
 
 function getUsdQuote(asset: CmcAsset): CmcQuote | undefined {
   const quote = asset.quote;
-  if (Array.isArray(quote)) {
-    return quote.find((item) => item.symbol === "USD");
-  }
+  if (Array.isArray(quote)) return quote.find((item) => item.symbol === "USD");
   return quote?.USD;
 }
 
-async function fetchMarkets(): Promise<Market[]> {
-  const apiKey = process.env.CMC_API_KEY?.trim();
-  if (!apiKey) throw new Error("CMC_API_KEY is not configured in the server environment");
+async function requestCmc(url: URL, apiKey?: string): Promise<CmcPayload> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (apiKey) headers["X-CMC_PRO_API_KEY"] = apiKey;
 
-  const url = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
-  url.searchParams.set("id", ASSETS.map((asset) => asset.id).join(","));
-  url.searchParams.set("convert", "USD");
-
-  const response = await fetch(url, {
-    headers: { "X-CMC_PRO_API_KEY": apiKey, Accept: "application/json" },
-    cache: "no-store",
-  });
-
+  const response = await fetch(url, { headers, cache: "no-store" });
   const rawText = await response.text();
   let payload: CmcPayload = {};
   try {
@@ -70,7 +42,10 @@ async function fetchMarkets(): Promise<Market[]> {
     const detail = errorMessage ? `: ${errorMessage}` : "";
     throw new Error(`CoinMarketCap HTTP ${response.status}${errorCode !== undefined ? ` (code ${errorCode})` : ""}${detail}`);
   }
+  return payload;
+}
 
+function normalizePayload(payload: CmcPayload): Market[] {
   const rawData = payload.data ?? {};
   const assets = Array.isArray(rawData) ? rawData : Object.values(rawData);
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
@@ -79,9 +54,7 @@ async function fetchMarkets(): Promise<Market[]> {
   for (const asset of ASSETS) {
     const coin = byId.get(asset.id);
     const quote = coin ? getUsdQuote(coin) : undefined;
-
     if (!coin || typeof quote?.price !== "number") continue;
-
     data.push({
       symbol: asset.symbol,
       name: asset.name,
@@ -91,11 +64,29 @@ async function fetchMarkets(): Promise<Market[]> {
     });
   }
 
-  if (data.length !== ASSETS.length) {
-    throw new Error(`CoinMarketCap returned ${data.length}/${ASSETS.length} requested assets`);
+  if (data.length !== ASSETS.length) throw new Error(`CoinMarketCap returned ${data.length}/${ASSETS.length} requested assets`);
+  return data;
+}
+
+async function fetchMarkets(): Promise<Market[]> {
+  const apiKey = process.env.CMC_API_KEY?.trim();
+  const query = ASSETS.map((asset) => asset.id).join(",");
+  const authenticatedUrl = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
+  authenticatedUrl.searchParams.set("id", query);
+  authenticatedUrl.searchParams.set("convert", "USD");
+
+  if (apiKey) {
+    try {
+      return normalizePayload(await requestCmc(authenticatedUrl, apiKey));
+    } catch (error) {
+      console.warn("[market-prices] authenticated CMC request failed; using public feed", error instanceof Error ? error.message : error);
+    }
   }
 
-  return data;
+  const publicUrl = new URL("https://pro-api.coinmarketcap.com/public-api/v3/cryptocurrency/quotes/latest");
+  publicUrl.searchParams.set("id", query);
+  publicUrl.searchParams.set("convert", "USD");
+  return normalizePayload(await requestCmc(publicUrl));
 }
 
 export const Route = createFileRoute("/api/market-prices")({
@@ -104,35 +95,20 @@ export const Route = createFileRoute("/api/market-prices")({
       GET: async () => {
         const now = Date.now();
         const cached = globalRef.__cmcMarketCache__;
-
         if (cached && cached.expiresAt > now) {
-          return Response.json(
-            { data: cached.data, cached: true },
-            { headers: { "Cache-Control": "no-store" } },
-          );
+          return Response.json({ data: cached.data, cached: true }, { headers: { "Cache-Control": "no-store" } });
         }
 
         try {
           const data = await fetchMarkets();
           globalRef.__cmcMarketCache__ = { data, expiresAt: now + CACHE_TTL_MS };
-
-          return Response.json(
-            { data, cached: false },
-            { headers: { "Cache-Control": "no-store" } },
-          );
+          return Response.json({ data, cached: false }, { headers: { "Cache-Control": "no-store" } });
         } catch (error) {
           if (cached) {
-            return Response.json(
-              { data: cached.data, cached: true, stale: true },
-              { headers: { "Cache-Control": "no-store" } },
-            );
+            return Response.json({ data: cached.data, cached: true, stale: true }, { headers: { "Cache-Control": "no-store" } });
           }
-
           console.error("[market-prices]", error instanceof Error ? error.message : error);
-          return Response.json(
-            { error: "Market data is temporarily unavailable" },
-            { status: 503 },
-          );
+          return Response.json({ error: "Market data is temporarily unavailable" }, { status: 503 });
         }
       },
     },
