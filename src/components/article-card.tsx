@@ -6,11 +6,13 @@ import { formatTime, type Article } from "@/lib/news";
 type ArticleWithTelegram = Article & {
   _telegramId?: number;
   _hasPhoto?: boolean;
+  _photoIds?: number[];
   _messageUrl?: string | null;
 };
 
 export function ArticleCard({ article, featured = false }: { article: ArticleWithTelegram; featured?: boolean }) {
   const isTelegram = article._telegramId !== undefined;
+  const photoIds = article._photoIds || [];
   
   return (
     <Link
@@ -25,15 +27,19 @@ export function ArticleCard({ article, featured = false }: { article: ArticleWit
         </time>
       </div>
       
-      {/* Show photo for Telegram posts */}
-      {isTelegram && article._hasPhoto && (
-        <div className="mt-3 mb-3 flex max-h-[200px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
-          <img
-            src={`/api/telegram-photo?id=${article._telegramId}`}
-            alt=""
-            loading="lazy"
-            className="max-h-[200px] w-full object-contain"
-          />
+      {/* Show multiple photos for Telegram posts */}
+      {isTelegram && article._hasPhoto && photoIds.length > 0 && (
+        <div className="mt-3 mb-3 grid gap-2" style={{ gridTemplateColumns: photoIds.length > 1 ? '1fr 1fr' : '1fr' }}>
+          {photoIds.slice(0, 4).map((photoId) => (
+            <div key={photoId} className="flex max-h-[150px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
+              <img
+                src={`/api/telegram-photo?id=${photoId}`}
+                alt=""
+                loading="lazy"
+                className="max-h-[150px] w-full object-contain"
+              />
+            </div>
+          ))}
         </div>
       )}
       
