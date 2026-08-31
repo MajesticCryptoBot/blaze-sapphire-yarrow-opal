@@ -10,12 +10,9 @@ type ArticleWithTelegram = Article & {
 };
 
 export function ArticleCard({ article, featured = false }: { article: ArticleWithTelegram; featured?: boolean }) {
-  const isTelegram = article._telegramId !== undefined;
-  
   return (
     <Link
-      to={isTelegram ? "#" : "/n/$slug"}
-      params={isTelegram ? {} : { slug: article.slug }}
+      to="#"
       className="group block rounded-lg border border-border bg-surface p-5 transition-[border-color,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:border-ring/40"
     >
       <div className="flex items-center justify-between gap-3">
@@ -25,28 +22,23 @@ export function ArticleCard({ article, featured = false }: { article: ArticleWit
         </time>
       </div>
       
-      {/* Show photo for Telegram posts */}
-      {isTelegram && article._hasPhoto && (
-        <div className="mt-3 mb-3 flex max-h-[200px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
-          <img
-            src={`/api/telegram-photo?id=${article._telegramId}`}
-            alt=""
-            loading="lazy"
-            className="max-h-[200px] w-full object-contain"
-          />
-        </div>
-      )}
+      {/* NO PHOTOS in main feed - text only */}
       
       <h2
         className={
           featured
-            ? "mt-4 font-display text-2xl font-medium leading-snug text-foreground sm:text-3xl"
-            : "mt-3 font-display text-xl font-medium leading-snug text-foreground"
+            ? "mt-4 font-display text-xl font-medium leading-snug text-foreground sm:text-2xl"
+            : "mt-3 font-display text-lg font-medium leading-snug text-foreground"
         }
       >
         {article.headline}
       </h2>
-      <p className="mt-3 text-sm leading-relaxed text-muted">{article.dek}</p>
+      
+      {/* Smaller text for dek */}
+      <p className="mt-2 text-sm leading-relaxed text-muted line-clamp-3">
+        {article.dek}
+      </p>
+      
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
           {article.category}
