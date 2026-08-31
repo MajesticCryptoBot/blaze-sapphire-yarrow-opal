@@ -7,7 +7,6 @@ type TelegramPost = {
   publishedAt: string;
   hasPhoto: boolean;
   messageUrl: string | null;
-  photoIds?: number[]; // Add support for multiple photos
 };
 
 type Market = {
@@ -33,12 +32,30 @@ function formatPrice(value: number) {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
 }
 
-// Store ALL posts permanently (except the latest one)
-let globalArchivedPosts: TelegramPost[] = [];
-let allSeenIds = new Set<number>();
+// Store in localStorage for persistence
+const STORAGE_KEY = 'telegram_rolling_window';
+const MAX_ARCHIVED_POSTS = 5; // Keep 5 older posts in the feed
+
+function loadArchivedPosts(): TelegramPost[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveArchivedPosts(posts: TelegramPost[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+  } catch {
+    // Ignore
+  }
+}
 
 export function LiveWire() {
   const [posts, setPosts] = useState<TelegramPost[]>([]);
+  const [archivedPosts, setArchivedPosts] = useState<TelegramPost[]>(loadArchivedPosts);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [newsError, setNewsError] = useState(false);
   const [marketError, setMarketError] = useState(false);
@@ -54,26 +71,38 @@ export function LiveWire() {
           const allPosts = payload.posts ?? [];
           setPosts(allPosts);
           
-          // Get the latest post ID
-          const latestId = allPosts.length > 0 ? allPosts[0].id : null;
-          
-          // Process ALL posts (including the latest one)
-          for (const post of allPosts) {
-            // Skip if we've already seen this post
-            if (allSeenIds.has(post.id)) continue;
+          if (allPosts.length > 0) {
+            // Get the latest post (first one)
+            const latestPost = allPosts[0];
             
-            // If this is the latest post, don't archive it (it stays in Live Wire)
-            if (post.id === latestId) continue;
+            // Get all other posts from the API response
+            const olderFromApi = allPosts.slice(1);
             
-            // Add to archived posts
-            allSeenIds.add(post.id);
-            globalArchivedPosts = [...globalArchivedPosts, post];
+            // Combine with existing archived posts
+            const existingIds = new Set(archivedPosts.map(p => p.id));
+            
+            // Add new posts that we haven't seen before
+            let updatedArchive = [...archivedPosts];
+            for (const post of olderFromApi) {
+              if (!existingIds.has(post.id)) {
+                updatedArchive.push(post);
+              }
+            }
+            
+            // Remove the latest post from archive if it's there
+            updatedArchive = updatedArchive.filter(p => p.id !== latestPost.id);
+            
+            // Sort by date (newest first)
+            updatedArchive.sort(
+              (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+            );
+            
+            // Keep ONLY the most recent 5 posts (rolling window)
+            updatedArchive = updatedArchive.slice(0, MAX_ARCHIVED_POSTS);
+            
+            setArchivedPosts(updatedArchive);
+            saveArchivedPosts(updatedArchive);
           }
-          
-          // Sort archived posts by date (newest first)
-          globalArchivedPosts.sort(
-            (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-          );
           
           setNewsError(false);
         }
@@ -88,7 +117,7 @@ export function LiveWire() {
       active = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [archivedPosts]);
 
   useEffect(() => {
     let active = true;
@@ -136,22 +165,7 @@ export function LiveWire() {
           <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
         ) : (
           <article className="py-5">
-            {/* Show multiple photos if available */}
-            {latestPost.hasPhoto && latestPost.photoIds && latestPost.photoIds.length > 0 ? (
-              <div className="mb-4 grid gap-2 grid-cols-1">
-                {latestPost.photoIds.map((photoId, index) => (
-                  <div key={photoId} className="flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
-                    <img
-                      src={`/api/telegram-photo?id=${photoId}`}
-                      alt={`Photo ${index + 1}`}
-                      loading="eager"
-                      className="max-h-[420px] w-full object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : latestPost.hasPhoto ? (
-              // Fallback for single photo (old format)
+            {latestPost.hasPhoto ? (
               <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
                 <img
                   src={`/api/telegram-photo?id=${latestPost.id}`}
@@ -213,7 +227,7 @@ export function LiveWire() {
   );
 }
 
-// Export function to get ALL archived posts
+// Export function to get archived posts (rolling window)
 export function getArchivedTelegramPosts(): TelegramPost[] {
-  return globalArchivedPosts;
+  return loadArchivedPosts();
 }
