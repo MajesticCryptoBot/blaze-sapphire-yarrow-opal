@@ -30,7 +30,7 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Convert archived Telegram posts to articles
+  // Convert archived Telegram posts to articles (text only)
   const allArticles = useMemo(() => {
     const archivedPosts = getArchivedTelegramPosts();
     
@@ -59,9 +59,7 @@ function Home() {
         publishedAt: post.publishedAt,
         related: [],
         keyFacts: [],
-        _telegramId: post.id,
-        _hasPhoto: post.hasPhoto,
-        _messageUrl: post.messageUrl,
+        // No photo data - text only in main feed
       };
     });
   }, []);
@@ -81,8 +79,7 @@ function Home() {
     });
   }, [q, cat, allArticles]);
 
-  // EXACT SAME architecture as before:
-  // lead = first article, rest = remaining articles
+  // EXACT SAME architecture as before
   const [lead, ...rest] = filtered;
 
   return (
@@ -102,7 +99,7 @@ function Home() {
         </p>
       </section>
 
-      {/* LiveWire - UNCHANGED (shows only latest post) */}
+      {/* LiveWire - shows only latest post with BIG text + photo */}
       <LiveWire />
 
       {/* Search and filters - UNCHANGED */}
@@ -136,7 +133,7 @@ function Home() {
         </div>
       </div>
 
-      {/* EXACT SAME GRID LAYOUT as before - just with Telegram posts */}
+      {/* EXACT SAME GRID LAYOUT - text only, smaller fonts */}
       {lead ? (
         <div className="mt-8 grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
