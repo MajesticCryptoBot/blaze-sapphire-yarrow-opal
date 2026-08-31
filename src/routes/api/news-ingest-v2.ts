@@ -4,7 +4,7 @@ import { getSql } from "@/lib/db";
 // Fresh endpoint intentionally created to bypass any stale /api/news-ingest
 // deployment/route artifact. The publisher is authenticated by the shared
 // secret; the destination channel is fixed server-side.
-const INGEST_VERSION = "ASP-INGEST-V7-20260831";
+const INGEST_VERSION = "ASP-INGEST-V8-20260831";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 
@@ -67,6 +67,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           ? body.channelUsername.trim().replace(/^@/, "")
           : "";
         const photoBase64 = body.photoBase64?.trim() || null;
+        const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
+        const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
           return json({ ok: false, error: "messageId must be a positive integer", version: INGEST_VERSION }, 400);
@@ -83,7 +85,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           await sql.query(
             `insert into telegram_posts
                (chat_id, message_id, chat_username, chat_title, text, published_at, photo_data, photo_mime_type, message_url, updated_at)
-             values ($1, $2, $3, $3, $4, $5, case when $6 is null then null else decode($6, 'base64') end, $7, $8, now())
+             values ($1, $2, $3, $3, $4, $5::timestamptz, $6::bytea, $7::text, $8::text, now())
              on conflict (chat_id, message_id) do update set
                text = excluded.text,
                published_at = excluded.published_at,
@@ -97,8 +99,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
               CANONICAL_CHANNEL,
               text,
               publishedAt.toISOString(),
-              photoBase64,
-              body.photoMimeType || null,
+              photoBuffer,
+              photoMimeType,
               body.messageUrl || `https://t.me/${CANONICAL_CHANNEL}/${messageId}`,
             ],
           );

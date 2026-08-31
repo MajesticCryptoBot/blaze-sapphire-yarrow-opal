@@ -3,7 +3,7 @@ import { getSql } from "@/lib/db";
 
 // Production diagnostic marker. This lets us prove which source is serving
 // /api/news-ingest instead of relying on a generic HTTP status.
-const INGEST_VERSION = "ASP-INGEST-V6-20260830";
+const INGEST_VERSION = "ASP-INGEST-V8-20260831";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 
@@ -74,6 +74,8 @@ export const Route = createFileRoute("/api/news-ingest")({
         if (photoBase64 && photoBase64.length > MAX_PHOTO_BASE64) {
           return response({ error: "Photo is too large", version: INGEST_VERSION }, 413);
         }
+        const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
+        const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
 
         // The authenticated publisher is permanently associated with
         // AlphaSignalsPro. The caller-supplied channel is diagnostic only.
@@ -83,7 +85,7 @@ export const Route = createFileRoute("/api/news-ingest")({
         await sql.query(
           `insert into telegram_posts
              (chat_id, message_id, chat_username, chat_title, text, published_at, photo_data, photo_mime_type, message_url, updated_at)
-           values ($1, $2, $3, $3, $4, $5, case when $6 is null then null else decode($6, 'base64') end, $7, $8, now())
+           values ($1, $2, $3, $3, $4, $5::timestamptz, $6::bytea, $7::text, $8::text, now())
            on conflict (chat_id, message_id) do update set
              text = excluded.text,
              published_at = excluded.published_at,
@@ -97,8 +99,8 @@ export const Route = createFileRoute("/api/news-ingest")({
             channel,
             text,
             publishedAt.toISOString(),
-            photoBase64,
-            body.photoMimeType || null,
+            photoBuffer,
+            photoMimeType,
             body.messageUrl || `https://t.me/${channel}/${messageId}`,
           ],
         );
