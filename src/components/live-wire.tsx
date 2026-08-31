@@ -86,6 +86,9 @@ export function LiveWire() {
     };
   }, []);
 
+  const latestPost = posts[0];
+  const previousPosts = posts.slice(1, 7);
+
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
@@ -95,45 +98,74 @@ export function LiveWire() {
               <Radio className="size-4 text-primary" />
               <h2 className="font-display text-2xl">Live Telegram wire</h2>
             </div>
-            <p className="mt-1 text-xs text-muted">Latest 24 hours · @AlphaSignalsPro</p>
+            <p className="mt-1 text-xs text-muted">Latest post · @AlphaSignalsPro</p>
           </div>
           <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">15s refresh</span>
         </div>
 
         {newsError ? (
           <p className="py-6 text-sm text-muted">Live wire is temporarily unavailable.</p>
-        ) : posts.length === 0 ? (
-          <p className="py-6 text-sm text-muted">No posts from the last 24 hours.</p>
+        ) : !latestPost ? (
+          <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
         ) : (
-          <div className="divide-y divide-border">
-            {posts.map((post) => (
-              <article key={post.id} className="py-5 first:pt-5 last:pb-1">
-                {post.hasPhoto ? (
-                  <img
-                    src={`/api/telegram-photo?id=${post.id}`}
-                    alt=""
-                    loading="lazy"
-                    className="mb-4 max-h-80 w-full rounded-md object-cover"
-                  />
-                ) : null}
-                <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{post.text}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
-                  <span>{formatTime(post.publishedAt)}</span>
+          <article className="py-5">
+            {latestPost.hasPhoto ? (
+              <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
+                <img
+                  src={`/api/telegram-photo?id=${latestPost.id}`}
+                  alt=""
+                  loading="eager"
+                  className="max-h-[420px] w-full object-contain"
+                />
+              </div>
+            ) : null}
+            <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{latestPost.text}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
+              <span>{formatTime(latestPost.publishedAt)}</span>
+              {latestPost.messageUrl ? (
+                <a
+                  href={latestPost.messageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  Telegram <ExternalLink className="size-3" />
+                </a>
+              ) : null}
+            </div>
+          </article>
+        )}
+
+        {previousPosts.length > 0 ? (
+          <div className="border-t border-border pt-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-xl">Latest on the wire</h3>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Recent</span>
+            </div>
+            <div className="mt-3 divide-y divide-border">
+              {previousPosts.map((post) => (
+                <article key={post.id} className="py-4 first:pt-1 last:pb-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{post.text}</p>
+                    <span className="shrink-0 font-mono text-[10px] uppercase text-subtle">
+                      {formatTime(post.publishedAt)}
+                    </span>
+                  </div>
                   {post.messageUrl ? (
                     <a
                       href={post.messageUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide text-primary hover:underline"
                     >
                       Telegram <ExternalLink className="size-3" />
                     </a>
                   ) : null}
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
