@@ -86,8 +86,8 @@ export function LiveWire() {
     };
   }, []);
 
+  // Get ONLY the latest post (the first one)
   const latestPost = posts[0];
-  const previousPosts = posts.slice(1, 7);
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -135,37 +135,6 @@ export function LiveWire() {
             </div>
           </article>
         )}
-
-        {previousPosts.length > 0 ? (
-          <div className="border-t border-border pt-5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-xl">Latest on the wire</h3>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Recent</span>
-            </div>
-            <div className="mt-3 divide-y divide-border">
-              {previousPosts.map((post) => (
-                <article key={post.id} className="py-4 first:pt-1 last:pb-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{post.text}</p>
-                    <span className="shrink-0 font-mono text-[10px] uppercase text-subtle">
-                      {formatTime(post.publishedAt)}
-                    </span>
-                  </div>
-                  {post.messageUrl ? (
-                    <a
-                      href={post.messageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide text-primary hover:underline"
-                    >
-                      Telegram <ExternalLink className="size-3" />
-                    </a>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
