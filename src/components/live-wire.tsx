@@ -7,6 +7,7 @@ type TelegramPost = {
   publishedAt: string;
   hasPhoto: boolean;
   messageUrl: string | null;
+  photoIds?: number[]; // Add support for multiple photos
 };
 
 type Market = {
@@ -32,8 +33,9 @@ function formatPrice(value: number) {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
 }
 
-// Store ALL posts globally (except the latest one which stays in Live Wire)
+// Store ALL posts permanently (except the latest one)
 let globalArchivedPosts: TelegramPost[] = [];
+let allSeenIds = new Set<number>();
 
 export function LiveWire() {
   const [posts, setPosts] = useState<TelegramPost[]>([]);
@@ -52,13 +54,26 @@ export function LiveWire() {
           const allPosts = payload.posts ?? [];
           setPosts(allPosts);
           
-          // Store ALL older posts (all except the latest one)
-          const older = allPosts.slice(1);
+          // Get the latest post ID
+          const latestId = allPosts.length > 0 ? allPosts[0].id : null;
           
-          // Only add new posts that aren't already stored
-          const existingIds = new Set(globalArchivedPosts.map(p => p.id));
-          const newPosts = older.filter(p => !existingIds.has(p.id));
-          globalArchivedPosts = [...globalArchivedPosts, ...newPosts];
+          // Process ALL posts (including the latest one)
+          for (const post of allPosts) {
+            // Skip if we've already seen this post
+            if (allSeenIds.has(post.id)) continue;
+            
+            // If this is the latest post, don't archive it (it stays in Live Wire)
+            if (post.id === latestId) continue;
+            
+            // Add to archived posts
+            allSeenIds.add(post.id);
+            globalArchivedPosts = [...globalArchivedPosts, post];
+          }
+          
+          // Sort archived posts by date (newest first)
+          globalArchivedPosts.sort(
+            (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+          );
           
           setNewsError(false);
         }
@@ -121,7 +136,22 @@ export function LiveWire() {
           <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
         ) : (
           <article className="py-5">
-            {latestPost.hasPhoto ? (
+            {/* Show multiple photos if available */}
+            {latestPost.hasPhoto && latestPost.photoIds && latestPost.photoIds.length > 0 ? (
+              <div className="mb-4 grid gap-2 grid-cols-1">
+                {latestPost.photoIds.map((photoId, index) => (
+                  <div key={photoId} className="flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
+                    <img
+                      src={`/api/telegram-photo?id=${photoId}`}
+                      alt={`Photo ${index + 1}`}
+                      loading="eager"
+                      className="max-h-[420px] w-full object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : latestPost.hasPhoto ? (
+              // Fallback for single photo (old format)
               <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
                 <img
                   src={`/api/telegram-photo?id=${latestPost.id}`}
