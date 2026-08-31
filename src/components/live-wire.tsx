@@ -34,7 +34,7 @@ function formatPrice(value: number) {
 
 // Store in localStorage for persistence
 const STORAGE_KEY = 'telegram_rolling_window';
-const MAX_ARCHIVED_POSTS = 5;
+const MAX_ARCHIVED_POSTS = 12; // Changed from 5 to 12 (show more posts)
 
 function loadArchivedPosts(): TelegramPost[] {
   try {
@@ -87,6 +87,7 @@ export function LiveWire() {
             updatedArchive.sort(
               (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
             );
+            // Keep up to 12 posts (rolling window)
             updatedArchive = updatedArchive.slice(0, MAX_ARCHIVED_POSTS);
             
             setArchivedPosts(updatedArchive);
@@ -154,7 +155,6 @@ export function LiveWire() {
           <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
         ) : (
           <article className="py-5">
-            {/* Show photo ONLY in Live Telegram wire */}
             {latestPost.hasPhoto ? (
               <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
                 <img
@@ -166,12 +166,10 @@ export function LiveWire() {
               </div>
             ) : null}
             
-            {/* BIGGER font for Live Telegram wire - like featured story */}
             <h2 className="font-display text-2xl font-medium leading-snug text-foreground sm:text-3xl">
               {latestPost.text.split('\n')[0] || latestPost.text.slice(0, 100)}
             </h2>
             
-            {/* Show full text with bigger font */}
             <p className="mt-3 text-base leading-relaxed text-muted">
               {latestPost.text}
             </p>
