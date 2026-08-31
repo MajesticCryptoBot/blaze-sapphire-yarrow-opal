@@ -1,3 +1,5 @@
+// src/routes/api/market-prices.ts
+import { createServerFn } from "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 
 const ASSETS = [
@@ -70,6 +72,8 @@ function normalizePayload(payload: CmcPayload): Market[] {
 
 async function fetchMarkets(): Promise<Market[]> {
   const apiKey = process.env.CMC_API_KEY?.trim();
+  console.log("🔵 [API] CMC_API_KEY exists:", !!apiKey);
+  
   const query = ASSETS.map((asset) => asset.id).join(",");
   const authenticatedUrl = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
   authenticatedUrl.searchParams.set("id", query);
@@ -77,40 +81,62 @@ async function fetchMarkets(): Promise<Market[]> {
 
   if (apiKey) {
     try {
+      console.log("🔵 [API] Trying authenticated CMC request");
       return normalizePayload(await requestCmc(authenticatedUrl, apiKey));
     } catch (error) {
       console.warn("[market-prices] authenticated CMC request failed; using public feed", error instanceof Error ? error.message : error);
     }
   }
 
+  console.log("🔵 [API] Trying public CMC request (no API key)");
   const publicUrl = new URL("https://pro-api.coinmarketcap.com/public-api/v3/cryptocurrency/quotes/latest");
   publicUrl.searchParams.set("id", query);
   publicUrl.searchParams.set("convert", "USD");
   return normalizePayload(await requestCmc(publicUrl));
 }
 
-export const Route = createFileRoute("/api/market-prices")({
-  server: {
-    handlers: {
-      GET: async () => {
-        const now = Date.now();
-        const cached = globalRef.__cmcMarketCache__;
-        if (cached && cached.expiresAt > now) {
-          return Response.json({ data: cached.data, cached: true }, { headers: { "Cache-Control": "no-store" } });
-        }
+export const getMarketPrices = createServerFn({
+  method: "GET",
+  handler: async () => {
+    console.log("🔵 [API] getMarketPrices called");
+    
+    const now = Date.now();
+    const cached = globalRef.__cmcMarketCache__;
+    
+    if (cached && cached.expiresAt > now) {
+      console.log("🔵 [API] Returning cached data");
+      return { data: cached.data, cached: true };
+    }
 
-        try {
-          const data = await fetchMarkets();
-          globalRef.__cmcMarketCache__ = { data, expiresAt: now + CACHE_TTL_MS };
-          return Response.json({ data, cached: false }, { headers: { "Cache-Control": "no-store" } });
-        } catch (error) {
-          if (cached) {
-            return Response.json({ data: cached.data, cached: true, stale: true }, { headers: { "Cache-Control": "no-store" } });
-          }
-          console.error("[market-prices]", error instanceof Error ? error.message : error);
-          return Response.json({ error: "Market data is temporarily unavailable" }, { status: 503 });
-        }
-      },
-    },
+    try {
+      console.log("🔵 [API] Fetching fresh data");
+      const data = await fetchMarkets();
+      console.log("🔵 [API] Fetched", data.length, "markets");
+      globalRef.__cmcMarketCache__ = { data, expiresAt: now + CACHE_TTL_MS };
+      return { data, cached: false };
+    } catch (error) {
+      console.error("🔴 [API] Error:", error);
+      if (cached) {
+        return { data: cached.data, cached: true, stale: true };
+      }
+      throw new Error("Market data is temporarily unavailable");
+    }
   },
 });
+
+export const Route = createFileRoute("/api/market-prices")({
+  loader: async () => {
+    console.log("🔵 [API] Route loader called");
+    return getMarketPrices();
+  },
+});
+
+export const component = () => {
+  const data = Route.useLoaderData();
+  return new Response(JSON.stringify(data), {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
+  });
+};
