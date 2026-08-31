@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { Input } from "@/components/ui/input";
 import { LiveWire } from "@/components/live-wire";
@@ -9,13 +9,77 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
+type TelegramPost = {
+  id: number;
+  text: string;
+  publishedAt: string;
+  hasPhoto: boolean;
+  messageUrl: string | null;
+};
+
+// Convert Telegram post to Article-like format for display
+function telegramToArticle(post: TelegramPost) {
+  return {
+    slug: `telegram-${post.id}`,
+    tag: "NEW" as const,
+    headline: post.text.split("\n")[0] || post.text.slice(0, 100),
+    dek: post.text,
+    body: [post.text],
+    tickers: [],
+    category: "Crypto",
+    publishedAt: post.publishedAt,
+    related: [],
+    keyFacts: [],
+    hasPhoto: post.hasPhoto,
+    id: post.id,
+    messageUrl: post.messageUrl,
+  };
+}
+
 function Home() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
+  const [telegramPosts, setTelegramPosts] = useState<TelegramPost[]>([]);
+
+  // Fetch Telegram posts
+  useEffect(() => {
+    let active = true;
+    const loadNews = async () => {
+      try {
+        const response = await fetch("/api/news", { cache: "no-store" });
+        if (!response.ok) throw new Error("news request failed");
+        const payload = (await response.json()) as { posts?: TelegramPost[] };
+        if (active) {
+          setTelegramPosts(payload.posts ?? []);
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+
+    void loadNews();
+    const timer = window.setInterval(loadNews, 15_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  // Combine hardcoded articles with Telegram posts (excluding the latest one)
+  const allArticles = useMemo(() => {
+    // Get all hardcoded articles
+    const hardcoded = [...ARTICLES];
+    
+    // Get Telegram posts (excluding the first/latest one)
+    const telegramArticles = telegramPosts.slice(1).map(telegramToArticle);
+    
+    // Combine: hardcoded articles first, then older Telegram posts
+    return [...hardcoded, ...telegramArticles];
+  }, [telegramPosts]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return ARTICLES.filter((a) => {
+    return allArticles.filter((a) => {
       const inCat = cat === "All" || a.category === cat;
       if (!inCat) return false;
       if (!query) return true;
@@ -26,7 +90,7 @@ function Home() {
         a.category.toLowerCase().includes(query)
       );
     });
-  }, [q, cat]);
+  }, [q, cat, allArticles]);
 
   const [lead, ...rest] = filtered;
 
