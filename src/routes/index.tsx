@@ -3,8 +3,8 @@ import { Search } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { Input } from "@/components/ui/input";
-import { LiveWire } from "@/components/live-wire";
-import { ARTICLES, CATEGORIES } from "@/lib/news";
+import { LiveWire, getArchivedTelegramPosts } from "@/components/live-wire";
+import { CATEGORIES } from "@/lib/news";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -17,65 +17,62 @@ type TelegramPost = {
   messageUrl: string | null;
 };
 
-// Convert Telegram post to Article-like format for display
+// Convert Telegram post to article format
 function telegramToArticle(post: TelegramPost) {
+  // Extract first line as headline, or first 100 characters
+  const lines = post.text.split('\n');
+  const headline = lines[0] || post.text.slice(0, 100);
+  const dek = lines.slice(1).join('\n') || post.text;
+  
+  // Try to detect category from text
+  let category = "Crypto";
+  if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
+    category = "AI";
+  } else if (post.text.toLowerCase().includes('stock') || post.text.toLowerCase().includes('market')) {
+    category = "Markets";
+  } else if (post.text.toLowerCase().includes('macro') || post.text.toLowerCase().includes('fed')) {
+    category = "Macro";
+  }
+  
   return {
     slug: `telegram-${post.id}`,
     tag: "NEW" as const,
-    headline: post.text.split("\n")[0] || post.text.slice(0, 100),
-    dek: post.text,
+    headline: headline,
+    dek: dek,
     body: [post.text],
     tickers: [],
-    category: "Crypto",
+    category: category,
     publishedAt: post.publishedAt,
     related: [],
     keyFacts: [],
-    hasPhoto: post.hasPhoto,
-    id: post.id,
-    messageUrl: post.messageUrl,
+    _telegramId: post.id,
+    _hasPhoto: post.hasPhoto,
+    _messageUrl: post.messageUrl,
   };
 }
 
 function Home() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
-  const [telegramPosts, setTelegramPosts] = useState<TelegramPost[]>([]);
+  const [, setForceUpdate] = useState(0);
 
-  // Fetch Telegram posts
+  // Force re-render every 15 seconds to show new posts
   useEffect(() => {
-    let active = true;
-    const loadNews = async () => {
-      try {
-        const response = await fetch("/api/news", { cache: "no-store" });
-        if (!response.ok) throw new Error("news request failed");
-        const payload = (await response.json()) as { posts?: TelegramPost[] };
-        if (active) {
-          setTelegramPosts(payload.posts ?? []);
-        }
-      } catch {
-        // Silently fail
-      }
-    };
-
-    void loadNews();
-    const timer = window.setInterval(loadNews, 15_000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
+    const timer = setInterval(() => {
+      setForceUpdate(prev => prev + 1);
+    }, 15000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Combine hardcoded articles with Telegram posts (excluding the latest one)
+  // Get ALL articles from Telegram archived posts (NO hardcoded articles!)
   const allArticles = useMemo(() => {
-    // Get all hardcoded articles
-    const hardcoded = [...ARTICLES];
-    
-    // Get Telegram posts (excluding the first/latest one)
-    const telegramArticles = telegramPosts.slice(1).map(telegramToArticle);
-    
-    // Combine: hardcoded articles first, then older Telegram posts
-    return [...hardcoded, ...telegramArticles];
-  }, [telegramPosts]);
+    const archivedPosts = getArchivedTelegramPosts();
+    // Sort by date (newest first)
+    const sorted = [...archivedPosts].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+    return sorted.map(telegramToArticle);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -86,7 +83,6 @@ function Home() {
       return (
         a.headline.toLowerCase().includes(query) ||
         a.dek.toLowerCase().includes(query) ||
-        a.tickers.some((t) => t.toLowerCase().includes(query)) ||
         a.category.toLowerCase().includes(query)
       );
     });
@@ -171,7 +167,7 @@ function Home() {
           </li>
         </ol>
         <p className="mt-4 font-mono text-xs text-subtle">
-          Example path · /n/warsh-hawkish-jackson-hole
+          Example path · /n/telegram-12345
         </p>
       </section>
     </main>
