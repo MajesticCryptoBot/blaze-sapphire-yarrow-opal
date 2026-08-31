@@ -15,7 +15,6 @@ type TelegramPost = {
   publishedAt: string;
   hasPhoto: boolean;
   messageUrl: string | null;
-  photoIds?: number[];
 };
 
 function Home() {
@@ -23,7 +22,7 @@ function Home() {
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [, setForceUpdate] = useState(0);
 
-  // Force re-render every 15 seconds to show new posts
+  // Force re-render every 15 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setForceUpdate(prev => prev + 1);
@@ -31,21 +30,15 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Get ALL articles from Telegram archived posts
+  // Convert archived Telegram posts to articles
   const allArticles = useMemo(() => {
     const archivedPosts = getArchivedTelegramPosts();
-    // Sort by date (newest first)
-    const sorted = [...archivedPosts].sort(
-      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
     
-    return sorted.map((post) => {
-      // Extract first line as headline
+    return archivedPosts.map((post) => {
       const lines = post.text.split('\n');
       const headline = lines[0] || post.text.slice(0, 100);
       const dek = lines.slice(1).join('\n') || post.text;
       
-      // Try to detect category from text
       let category = "Crypto";
       if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
         category = "AI";
@@ -68,12 +61,12 @@ function Home() {
         keyFacts: [],
         _telegramId: post.id,
         _hasPhoto: post.hasPhoto,
-        _photoIds: post.photoIds || [],
         _messageUrl: post.messageUrl,
       };
     });
   }, []);
 
+  // Filter articles
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return allArticles.filter((a) => {
@@ -88,10 +81,13 @@ function Home() {
     });
   }, [q, cat, allArticles]);
 
+  // EXACT SAME architecture as before:
+  // lead = first article, rest = remaining articles
   const [lead, ...rest] = filtered;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      {/* Header - UNCHANGED */}
       <section className="border-b border-border pb-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
           The wire · Telegram desk companion
@@ -106,8 +102,10 @@ function Home() {
         </p>
       </section>
 
+      {/* LiveWire - UNCHANGED (shows only latest post) */}
       <LiveWire />
 
+      {/* Search and filters - UNCHANGED */}
       <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
@@ -138,6 +136,7 @@ function Home() {
         </div>
       </div>
 
+      {/* EXACT SAME GRID LAYOUT as before - just with Telegram posts */}
       {lead ? (
         <div className="mt-8 grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
@@ -153,6 +152,7 @@ function Home() {
         <p className="mt-12 text-sm text-muted">No stories match that filter.</p>
       )}
 
+      {/* "For the Telegram desk" section - UNCHANGED */}
       <section id="desk" className="mt-16 rounded-lg border border-border bg-surface p-6 sm:p-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
           For the Telegram desk
