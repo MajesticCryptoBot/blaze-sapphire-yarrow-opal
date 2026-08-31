@@ -93,17 +93,6 @@ function Home() {
         <p className="mt-12 text-sm text-muted">No stories match that filter.</p>
       )}
 
-      {rest.length > 2 ? (
-        <section className="mt-10">
-          <h2 className="font-display text-2xl">Latest on the wire</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {rest.slice(2).map((a) => (
-              <ArticleCard key={a.slug} article={a} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section id="desk" className="mt-16 rounded-lg border border-border bg-surface p-6 sm:p-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
           For the Telegram desk
