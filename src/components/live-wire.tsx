@@ -34,7 +34,7 @@ function formatPrice(value: number) {
 
 // Store in localStorage for persistence
 const STORAGE_KEY = 'telegram_rolling_window';
-const MAX_ARCHIVED_POSTS = 5; // Keep 5 older posts in the feed
+const MAX_ARCHIVED_POSTS = 5;
 
 function loadArchivedPosts(): TelegramPost[] {
   try {
@@ -72,16 +72,10 @@ export function LiveWire() {
           setPosts(allPosts);
           
           if (allPosts.length > 0) {
-            // Get the latest post (first one)
             const latestPost = allPosts[0];
-            
-            // Get all other posts from the API response
             const olderFromApi = allPosts.slice(1);
             
-            // Combine with existing archived posts
             const existingIds = new Set(archivedPosts.map(p => p.id));
-            
-            // Add new posts that we haven't seen before
             let updatedArchive = [...archivedPosts];
             for (const post of olderFromApi) {
               if (!existingIds.has(post.id)) {
@@ -89,15 +83,10 @@ export function LiveWire() {
               }
             }
             
-            // Remove the latest post from archive if it's there
             updatedArchive = updatedArchive.filter(p => p.id !== latestPost.id);
-            
-            // Sort by date (newest first)
             updatedArchive.sort(
               (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
             );
-            
-            // Keep ONLY the most recent 5 posts (rolling window)
             updatedArchive = updatedArchive.slice(0, MAX_ARCHIVED_POSTS);
             
             setArchivedPosts(updatedArchive);
@@ -165,6 +154,7 @@ export function LiveWire() {
           <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
         ) : (
           <article className="py-5">
+            {/* Show photo ONLY in Live Telegram wire */}
             {latestPost.hasPhoto ? (
               <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
                 <img
@@ -175,7 +165,17 @@ export function LiveWire() {
                 />
               </div>
             ) : null}
-            <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{latestPost.text}</p>
+            
+            {/* BIGGER font for Live Telegram wire - like featured story */}
+            <h2 className="font-display text-2xl font-medium leading-snug text-foreground sm:text-3xl">
+              {latestPost.text.split('\n')[0] || latestPost.text.slice(0, 100)}
+            </h2>
+            
+            {/* Show full text with bigger font */}
+            <p className="mt-3 text-base leading-relaxed text-muted">
+              {latestPost.text}
+            </p>
+            
             <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
               <span>{formatTime(latestPost.publishedAt)}</span>
               {latestPost.messageUrl ? (
