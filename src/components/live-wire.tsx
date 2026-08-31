@@ -32,6 +32,9 @@ function formatPrice(value: number) {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
 }
 
+// Store ALL posts globally (except the latest one which stays in Live Wire)
+let globalArchivedPosts: TelegramPost[] = [];
+
 export function LiveWire() {
   const [posts, setPosts] = useState<TelegramPost[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -46,7 +49,17 @@ export function LiveWire() {
         if (!response.ok) throw new Error("news request failed");
         const payload = (await response.json()) as { posts?: TelegramPost[] };
         if (active) {
-          setPosts(payload.posts ?? []);
+          const allPosts = payload.posts ?? [];
+          setPosts(allPosts);
+          
+          // Store ALL older posts (all except the latest one)
+          const older = allPosts.slice(1);
+          
+          // Only add new posts that aren't already stored
+          const existingIds = new Set(globalArchivedPosts.map(p => p.id));
+          const newPosts = older.filter(p => !existingIds.has(p.id));
+          globalArchivedPosts = [...globalArchivedPosts, ...newPosts];
+          
           setNewsError(false);
         }
       } catch {
@@ -87,8 +100,6 @@ export function LiveWire() {
   }, []);
 
   const latestPost = posts[0];
-  // Keep older posts to pass to parent component
-  const olderPosts = posts.slice(1);
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -172,9 +183,7 @@ export function LiveWire() {
   );
 }
 
-// Export older posts for use in parent component
-export function useTelegramPosts() {
-  const [posts, setPosts] = useState<TelegramPost[]>([]);
-  // ... similar fetch logic
-  return posts;
+// Export function to get ALL archived posts
+export function getArchivedTelegramPosts(): TelegramPost[] {
+  return globalArchivedPosts;
 }
