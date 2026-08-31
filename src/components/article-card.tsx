@@ -2,15 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime, type Article } from "@/lib/news";
 
-// Extended type to include Telegram-specific fields
-type ArticleWithPhoto = Article & {
-  hasPhoto?: boolean;
-  id?: number;
-  messageUrl?: string | null;
+// Extended type
+type ArticleWithTelegram = Article & {
+  _telegramId?: number;
+  _hasPhoto?: boolean;
+  _messageUrl?: string | null;
 };
 
-export function ArticleCard({ article, featured = false }: { article: ArticleWithPhoto; featured?: boolean }) {
-  const isTelegram = 'id' in article && article.id !== undefined;
+export function ArticleCard({ article, featured = false }: { article: ArticleWithTelegram; featured?: boolean }) {
+  const isTelegram = article._telegramId !== undefined;
   
   return (
     <Link
@@ -26,10 +26,10 @@ export function ArticleCard({ article, featured = false }: { article: ArticleWit
       </div>
       
       {/* Show photo for Telegram posts */}
-      {isTelegram && (article as any).hasPhoto && (
+      {isTelegram && article._hasPhoto && (
         <div className="mt-3 mb-3 flex max-h-[200px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
           <img
-            src={`/api/telegram-photo?id=${(article as any).id}`}
+            src={`/api/telegram-photo?id=${article._telegramId}`}
             alt=""
             loading="lazy"
             className="max-h-[200px] w-full object-contain"
