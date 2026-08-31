@@ -15,41 +15,8 @@ type TelegramPost = {
   publishedAt: string;
   hasPhoto: boolean;
   messageUrl: string | null;
+  photoIds?: number[];
 };
-
-// Convert Telegram post to article format
-function telegramToArticle(post: TelegramPost) {
-  // Extract first line as headline, or first 100 characters
-  const lines = post.text.split('\n');
-  const headline = lines[0] || post.text.slice(0, 100);
-  const dek = lines.slice(1).join('\n') || post.text;
-  
-  // Try to detect category from text
-  let category = "Crypto";
-  if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
-    category = "AI";
-  } else if (post.text.toLowerCase().includes('stock') || post.text.toLowerCase().includes('market')) {
-    category = "Markets";
-  } else if (post.text.toLowerCase().includes('macro') || post.text.toLowerCase().includes('fed')) {
-    category = "Macro";
-  }
-  
-  return {
-    slug: `telegram-${post.id}`,
-    tag: "NEW" as const,
-    headline: headline,
-    dek: dek,
-    body: [post.text],
-    tickers: [],
-    category: category,
-    publishedAt: post.publishedAt,
-    related: [],
-    keyFacts: [],
-    _telegramId: post.id,
-    _hasPhoto: post.hasPhoto,
-    _messageUrl: post.messageUrl,
-  };
-}
 
 function Home() {
   const [q, setQ] = useState("");
@@ -64,14 +31,47 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Get ALL articles from Telegram archived posts (NO hardcoded articles!)
+  // Get ALL articles from Telegram archived posts
   const allArticles = useMemo(() => {
     const archivedPosts = getArchivedTelegramPosts();
     // Sort by date (newest first)
     const sorted = [...archivedPosts].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
-    return sorted.map(telegramToArticle);
+    
+    return sorted.map((post) => {
+      // Extract first line as headline
+      const lines = post.text.split('\n');
+      const headline = lines[0] || post.text.slice(0, 100);
+      const dek = lines.slice(1).join('\n') || post.text;
+      
+      // Try to detect category from text
+      let category = "Crypto";
+      if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
+        category = "AI";
+      } else if (post.text.toLowerCase().includes('stock') || post.text.toLowerCase().includes('market')) {
+        category = "Markets";
+      } else if (post.text.toLowerCase().includes('macro') || post.text.toLowerCase().includes('fed')) {
+        category = "Macro";
+      }
+      
+      return {
+        slug: `telegram-${post.id}`,
+        tag: "NEW" as const,
+        headline: headline,
+        dek: dek,
+        body: [post.text],
+        tickers: [],
+        category: category,
+        publishedAt: post.publishedAt,
+        related: [],
+        keyFacts: [],
+        _telegramId: post.id,
+        _hasPhoto: post.hasPhoto,
+        _photoIds: post.photoIds || [],
+        _messageUrl: post.messageUrl,
+      };
+    });
   }, []);
 
   const filtered = useMemo(() => {
