@@ -86,8 +86,9 @@ export function LiveWire() {
     };
   }, []);
 
-  // Get ONLY the latest post (the first one)
   const latestPost = posts[0];
+  // Keep older posts to pass to parent component
+  const olderPosts = posts.slice(1);
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -169,4 +170,11 @@ export function LiveWire() {
       </div>
     </section>
   );
+}
+
+// Export older posts for use in parent component
+export function useTelegramPosts() {
+  const [posts, setPosts] = useState<TelegramPost[]>([]);
+  // ... similar fetch logic
+  return posts;
 }
