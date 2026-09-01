@@ -1,3 +1,4 @@
+// src/routes/index.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
@@ -8,14 +9,6 @@ import { CATEGORIES } from "@/lib/news";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
-
-type TelegramPost = {
-  id: number;
-  text: string;
-  publishedAt: string;
-  hasPhoto: boolean;
-  messageUrl: string | null;
-};
 
 function Home() {
   const [q, setQ] = useState("");
@@ -30,7 +23,7 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Convert archived Telegram posts to articles (text only)
+  // Get ALL archived posts (up to 12)
   const allArticles = useMemo(() => {
     const archivedPosts = getArchivedTelegramPosts();
     
@@ -59,12 +52,13 @@ function Home() {
         publishedAt: post.publishedAt,
         related: [],
         keyFacts: [],
-        // No photo data - text only in main feed
+        _telegramId: post.id,
+        _hasPhoto: post.hasPhoto,
+        _messageUrl: post.messageUrl,
       };
     });
   }, []);
 
-  // Filter articles
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return allArticles.filter((a) => {
@@ -79,7 +73,7 @@ function Home() {
     });
   }, [q, cat, allArticles]);
 
-  // EXACT SAME architecture as before
+  // Show ALL posts, not just 3
   const [lead, ...rest] = filtered;
 
   return (
@@ -99,7 +93,6 @@ function Home() {
         </p>
       </section>
 
-      {/* LiveWire - shows only latest post with BIG text + photo */}
       <LiveWire />
 
       {/* Search and filters - UNCHANGED */}
@@ -133,7 +126,7 @@ function Home() {
         </div>
       </div>
 
-      {/* EXACT SAME GRID LAYOUT - text only, smaller fonts */}
+      {/* Show ALL posts in a grid */}
       {lead ? (
         <div className="mt-8 grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
@@ -147,6 +140,15 @@ function Home() {
         </div>
       ) : (
         <p className="mt-12 text-sm text-muted">No stories match that filter.</p>
+      )}
+
+      {/* Show MORE posts in a second row */}
+      {rest.length > 2 && (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rest.slice(2).map((a) => (
+            <ArticleCard key={a.slug} article={a} />
+          ))}
+        </div>
       )}
 
       {/* "For the Telegram desk" section - UNCHANGED */}
