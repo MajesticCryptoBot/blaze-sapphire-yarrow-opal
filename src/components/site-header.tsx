@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { TELEGRAM_URL } from "@/lib/telegram-feed";
 
 export function SiteHeader() {
   const [now, setNow] = useState(() => new Date());
@@ -24,8 +24,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/92 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex items-center gap-3 min-h-11">
-          <span className="flex size-8 items-center justify-center rounded-sm bg-primary text-primary-foreground font-display text-sm font-semibold">
+        <Link to="/" className="flex min-h-11 items-center gap-3">
+          <span className="flex size-8 items-center justify-center rounded-sm bg-primary font-display text-sm font-semibold text-primary-foreground">
             A
           </span>
           <span className="leading-tight">
@@ -52,27 +52,20 @@ export function SiteHeader() {
             Markets
           </Link>
           <a
-            href="#desk"
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
             className="flex h-11 items-center px-3 text-sm text-muted hover:text-foreground"
           >
-            Desk
+            Telegram
           </a>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Link
-            to="/"
-            className="flex size-11 items-center justify-center text-muted hover:text-foreground md:hidden"
-            aria-label="Home"
-          >
-            <Search className="size-4" />
-          </Link>
-          <div className="hidden text-right sm:block">
-            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
-              UTC
-            </div>
-            <div className="font-mono text-[11px] tabular-nums text-muted">{stamp}</div>
+        <div className="hidden text-right sm:block">
+          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
+            UTC
           </div>
+          <div className="font-mono text-[11px] tabular-nums text-muted">{stamp}</div>
         </div>
       </div>
     </header>

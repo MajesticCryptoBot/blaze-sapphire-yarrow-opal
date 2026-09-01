@@ -17,7 +17,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Alpha Signals Pro — professional market intelligence for crypto, macro, and AI. Full briefs behind the Telegram wire.",
+          "Alpha Signals Pro — live market intelligence for crypto, macro, and AI.",
       },
       { name: "theme-color", content: "#09090b" },
     ],

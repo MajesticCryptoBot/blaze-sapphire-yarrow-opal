@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getSql } from "@/lib/db";
+import { getTelegramPhoto } from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/api/telegram-photo")({
   server: {
@@ -10,12 +10,7 @@ export const Route = createFileRoute("/api/telegram-photo")({
           return new Response("Bad request", { status: 400 });
         }
 
-        const sql = await getSql();
-        const rows = await sql.query<{ photo_data: Uint8Array | null; photo_mime_type: string | null }>(
-          "select photo_data, photo_mime_type from telegram_posts where id = $1 limit 1",
-          [id],
-        );
-        const row = rows[0];
+        const row = await getTelegramPhoto(id);
         if (!row?.photo_data) return new Response("Not found", { status: 404 });
 
         const bytes = row.photo_data instanceof Uint8Array

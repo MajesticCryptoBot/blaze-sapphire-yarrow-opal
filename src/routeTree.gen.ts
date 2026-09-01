@@ -11,6 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as ApiMarketPricesRouteImport } from './routes/api/market-prices'
+import { Route as ApiNewsRouteImport } from './routes/api/news'
+import { Route as ApiNewsIngestRouteImport } from './routes/api/news-ingest'
+import { Route as ApiNewsIngestV2RouteImport } from './routes/api/news-ingest-v2'
+import { Route as ApiTelegramPhotoRouteImport } from './routes/api/telegram-photo'
 import { Route as NSlugRouteImport } from './routes/n.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +28,31 @@ const MarketsRoute = MarketsRouteImport.update({
   path: '/markets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketPricesRoute = ApiMarketPricesRouteImport.update({
+  id: '/api/market-prices',
+  path: '/api/market-prices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNewsRoute = ApiNewsRouteImport.update({
+  id: '/api/news',
+  path: '/api/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNewsIngestRoute = ApiNewsIngestRouteImport.update({
+  id: '/api/news-ingest',
+  path: '/api/news-ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNewsIngestV2Route = ApiNewsIngestV2RouteImport.update({
+  id: '/api/news-ingest-v2',
+  path: '/api/news-ingest-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramPhotoRoute = ApiTelegramPhotoRouteImport.update({
+  id: '/api/telegram-photo',
+  path: '/api/telegram-photo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NSlugRoute = NSlugRouteImport.update({
   id: '/n/$slug',
   path: '/n/$slug',
@@ -32,30 +62,75 @@ const NSlugRoute = NSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/markets': typeof MarketsRoute
+  '/api/market-prices': typeof ApiMarketPricesRoute
+  '/api/news': typeof ApiNewsRoute
+  '/api/news-ingest': typeof ApiNewsIngestRoute
+  '/api/news-ingest-v2': typeof ApiNewsIngestV2Route
+  '/api/telegram-photo': typeof ApiTelegramPhotoRoute
   '/n/$slug': typeof NSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/markets': typeof MarketsRoute
+  '/api/market-prices': typeof ApiMarketPricesRoute
+  '/api/news': typeof ApiNewsRoute
+  '/api/news-ingest': typeof ApiNewsIngestRoute
+  '/api/news-ingest-v2': typeof ApiNewsIngestV2Route
+  '/api/telegram-photo': typeof ApiTelegramPhotoRoute
   '/n/$slug': typeof NSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/markets': typeof MarketsRoute
+  '/api/market-prices': typeof ApiMarketPricesRoute
+  '/api/news': typeof ApiNewsRoute
+  '/api/news-ingest': typeof ApiNewsIngestRoute
+  '/api/news-ingest-v2': typeof ApiNewsIngestV2Route
+  '/api/telegram-photo': typeof ApiTelegramPhotoRoute
   '/n/$slug': typeof NSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/markets' | '/n/$slug'
+  fullPaths:
+    | '/'
+    | '/markets'
+    | '/api/market-prices'
+    | '/api/news'
+    | '/api/news-ingest'
+    | '/api/news-ingest-v2'
+    | '/api/telegram-photo'
+    | '/n/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/markets' | '/n/$slug'
-  id: '__root__' | '/' | '/markets' | '/n/$slug'
+  to:
+    | '/'
+    | '/markets'
+    | '/api/market-prices'
+    | '/api/news'
+    | '/api/news-ingest'
+    | '/api/news-ingest-v2'
+    | '/api/telegram-photo'
+    | '/n/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/markets'
+    | '/api/market-prices'
+    | '/api/news'
+    | '/api/news-ingest'
+    | '/api/news-ingest-v2'
+    | '/api/telegram-photo'
+    | '/n/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MarketsRoute: typeof MarketsRoute
+  ApiMarketPricesRoute: typeof ApiMarketPricesRoute
+  ApiNewsRoute: typeof ApiNewsRoute
+  ApiNewsIngestRoute: typeof ApiNewsIngestRoute
+  ApiNewsIngestV2Route: typeof ApiNewsIngestV2Route
+  ApiTelegramPhotoRoute: typeof ApiTelegramPhotoRoute
   NSlugRoute: typeof NSlugRoute
 }
 
@@ -75,6 +150,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/market-prices': {
+      id: '/api/market-prices'
+      path: '/api/market-prices'
+      fullPath: '/api/market-prices'
+      preLoaderRoute: typeof ApiMarketPricesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/news': {
+      id: '/api/news'
+      path: '/api/news'
+      fullPath: '/api/news'
+      preLoaderRoute: typeof ApiNewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/news-ingest': {
+      id: '/api/news-ingest'
+      path: '/api/news-ingest'
+      fullPath: '/api/news-ingest'
+      preLoaderRoute: typeof ApiNewsIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/news-ingest-v2': {
+      id: '/api/news-ingest-v2'
+      path: '/api/news-ingest-v2'
+      fullPath: '/api/news-ingest-v2'
+      preLoaderRoute: typeof ApiNewsIngestV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram-photo': {
+      id: '/api/telegram-photo'
+      path: '/api/telegram-photo'
+      fullPath: '/api/telegram-photo'
+      preLoaderRoute: typeof ApiTelegramPhotoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/n/$slug': {
       id: '/n/$slug'
       path: '/n/$slug'
@@ -88,6 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MarketsRoute: MarketsRoute,
+  ApiMarketPricesRoute: ApiMarketPricesRoute,
+  ApiNewsRoute: ApiNewsRoute,
+  ApiNewsIngestRoute: ApiNewsIngestRoute,
+  ApiNewsIngestV2Route: ApiNewsIngestV2Route,
+  ApiTelegramPhotoRoute: ApiTelegramPhotoRoute,
   NSlugRoute: NSlugRoute,
 }
 export const routeTree = rootRouteImport

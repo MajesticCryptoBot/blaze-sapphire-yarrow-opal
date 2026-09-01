@@ -21,6 +21,7 @@ function formatPrice(value: number) {
 function Markets() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -35,6 +36,8 @@ function Markets() {
         }
       } catch {
         if (active) setError(true);
+      } finally {
+        if (active) setLoaded(true);
       }
     };
 
@@ -49,12 +52,12 @@ function Markets() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
-        Live market tape
+        Spot tape
       </p>
       <h1 className="mt-3 font-display text-4xl font-medium">Markets</h1>
       <p className="mt-3 max-w-xl text-muted">
-        Live CoinMarketCap prices for BTC, ETH, XRP, SOL, and BNB. The server
-        caches the feed for three minutes so visitors share the same API request.
+        Live USD quotes for Bitcoin, Ether, XRP, Solana, and BNB — the core
+        complex we cover on the wire.
       </p>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-border">
@@ -85,13 +88,22 @@ function Markets() {
                 </tr>
               );
             })}
+            {!loaded && markets.length === 0
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-4 py-4 text-sm text-subtle" colSpan={5}>
+                      Loading the tape…
+                    </td>
+                  </tr>
+                ))
+              : null}
           </tbody>
         </table>
       </div>
 
-      {error && markets.length === 0 ? (
+      {error && markets.length === 0 && loaded ? (
         <p className="mt-5 text-sm text-muted">
-          Live market data is unavailable. Configure CMC_API_KEY in Vercel.
+          The tape is temporarily unavailable. Please try again shortly.
         </p>
       ) : null}
     </main>

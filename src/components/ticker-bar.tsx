@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { TICKERS } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 
 type LiveMarket = {
   symbol: string;
-  name: string;
   price: number;
   change24h: number;
-  lastUpdated: string;
 };
 
-const LIVE_SYMBOLS = new Set(["BTC", "ETH", "XRP", "SOL", "BNB"]);
-const EXTRA_SYMBOLS = ["NVDA", "SPX", "TSLA", "AAPL", "GOLD", "SILVER", "GRAM", "SUI", "NEAR"];
+const SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
 const REFRESH_MS = 180_000;
 
 function formatPrice(price: number) {
@@ -32,7 +28,7 @@ export function TickerBar() {
         const payload = (await response.json()) as { data?: LiveMarket[] };
         if (active) setLiveMarkets(payload.data ?? []);
       } catch {
-        // Keep the last successful live values visible during temporary API failures.
+        // Keep last good tape visible.
       }
     };
 
@@ -46,25 +42,14 @@ export function TickerBar() {
 
   const items = useMemo(() => {
     const liveBySymbol = new Map(liveMarkets.map((market) => [market.symbol, market]));
-    const staticBySymbol = new Map(TICKERS.map((ticker) => [ticker.symbol, ticker]));
-
-    const crypto = ["BTC", "ETH", "XRP", "SOL", "BNB"].map((symbol) => {
+    return SYMBOLS.map((symbol) => {
       const live = liveBySymbol.get(symbol);
-      if (live) return { symbol, price: live.price, change: live.change24h, live: true };
-      return { symbol, price: null, change: null, live: false };
-    });
-
-    const extras = EXTRA_SYMBOLS.map((symbol) => {
-      const ticker = staticBySymbol.get(symbol);
       return {
         symbol,
-        price: ticker?.price ?? null,
-        change: ticker?.change ?? null,
-        live: false,
+        price: live?.price ?? null,
+        change: live?.change24h ?? null,
       };
     });
-
-    return [...crypto, ...extras];
   }, [liveMarkets]);
 
   const loop = [...items, ...items];
@@ -84,7 +69,7 @@ export function TickerBar() {
                   {t.symbol}
                 </span>
                 <span className="font-mono text-[12px] tabular-nums text-foreground">
-                  {t.price == null ? "—" : t.live ? `$${formatPrice(t.price)}` : `$${formatPrice(t.price)}`}
+                  {t.price == null ? "—" : `$${formatPrice(t.price)}`}
                 </span>
                 {t.change != null ? (
                   <span
@@ -96,9 +81,6 @@ export function TickerBar() {
                     {up ? "+" : ""}
                     {t.change.toFixed(2)}%
                   </span>
-                ) : null}
-                {t.live ? (
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-subtle">LIVE</span>
                 ) : null}
               </div>
             );

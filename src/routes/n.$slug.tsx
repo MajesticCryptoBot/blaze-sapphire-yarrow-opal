@@ -1,75 +1,63 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { CopyLink } from "@/components/copy-link";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime } from "@/lib/news";
-
-// Types for Telegram posts
-type TelegramPost = {
-  id: number;
-  text: string;
-  publishedAt: string;
-  hasPhoto: boolean;
-  messageUrl: string | null;
-};
-
-// Helper to get Telegram post from localStorage
-function getTelegramPostById(id: number): TelegramPost | null {
-  try {
-    const stored = localStorage.getItem('telegram_rolling_window');
-    if (!stored) return null;
-    const posts = JSON.parse(stored) as TelegramPost[];
-    return posts.find(p => p.id === id) || null;
-  } catch {
-    return null;
-  }
-}
+import {
+  TELEGRAM_CHANNEL,
+  TELEGRAM_URL,
+  getTelegramPost,
+  parsePublicId,
+  splitHeadline,
+  tagFromText,
+} from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/n/$slug")({
   component: ArticlePage,
-  loader: ({ params }) => {
-    // Only handle Telegram posts
-    if (!params.slug.startsWith('telegram-')) {
-      throw notFound();
-    }
-    
-    const id = parseInt(params.slug.replace('telegram-', ''));
-    const post = getTelegramPostById(id);
+  loader: async ({ params }) => {
+    const id = parsePublicId(params.slug);
+    if (!id) throw notFound();
+    const post = await getTelegramPost(id);
     if (!post) throw notFound();
-    return { post };
+    return { post, slug: params.slug };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? `${loaderData.post.text.slice(0, 60)}... · ASP`
-          : "Alpha Signals Pro",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const headline = loaderData ? splitHeadline(loaderData.post.text).headline : "Alpha Signals Pro";
+    return {
+      meta: [
+        { title: `${headline} · ASP` },
+        {
+          name: "description",
+          content: loaderData?.post.text.slice(0, 180) ?? "Alpha Signals Pro market brief.",
+        },
+      ],
+    };
+  },
 });
 
 function ArticlePage() {
-  const { post } = Route.useLoaderData();
-  
-  const lines = post.text.split('\n');
-  const headline = lines[0] || post.text.slice(0, 100);
-  const body = lines.slice(1).join('\n') || post.text;
+  const { post, slug } = Route.useLoaderData();
+  const { headline, body } = splitHeadline(post.text);
+  const paragraphs = body.length ? body : [post.text];
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <Link
-        to="/"
-        className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Back to the wire
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/"
+          className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back to the wire
+        </Link>
+        <CopyLink path={`/n/${slug}`} label="Copy link" />
+      </div>
 
       <article className="mt-6 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
-          <TagBadge tag="NEW" />
+          <TagBadge tag={tagFromText(post.text)} />
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
-            Telegram
+            @{TELEGRAM_CHANNEL}
           </span>
           <time className="font-mono text-[11px] tabular-nums text-subtle">
             {formatTime(post.publishedAt)} UTC
@@ -81,37 +69,33 @@ function ArticlePage() {
         </h1>
 
         {post.hasPhoto ? (
-          <div className="mt-6 flex max-h-[600px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
+          <div className="mt-6 overflow-hidden rounded-md bg-elevated">
             <img
               src={`/api/telegram-photo?id=${post.id}`}
               alt=""
               loading="eager"
-              className="max-h-[600px] w-full object-contain"
+              className="max-h-[640px] w-full object-contain"
             />
           </div>
         ) : null}
 
         <div className="mt-8 space-y-5 text-[17px] leading-7 text-foreground/92">
-          {body.split('\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
+          {paragraphs.map((paragraph, index) => (
+            <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
           ))}
         </div>
 
-        {post.messageUrl ? (
-          <div className="mt-8 rounded-md border border-border bg-surface p-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
-              Original source
-            </p>
-            <a
-              href={post.messageUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              View on Telegram →
-            </a>
-          </div>
-        ) : null}
+        <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-border pt-6">
+          <a
+            href={post.messageUrl || TELEGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+          >
+            View on Telegram
+            <ExternalLink className="size-3.5" />
+          </a>
+        </div>
       </article>
     </main>
   );

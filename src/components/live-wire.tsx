@@ -1,113 +1,25 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
-
-type TelegramPost = {
-  id: number;
-  text: string;
-  publishedAt: string;
-  hasPhoto: boolean;
-  messageUrl: string | null;
-};
+import { formatTime } from "@/lib/news";
+import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
+import { cn } from "@/lib/utils";
 
 type Market = {
   symbol: string;
   name: string;
   price: number;
   change24h: number;
-  lastUpdated: string | null;
 };
 
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "short",
-  }).format(new Date(value));
-}
-
 function formatPrice(value: number) {
-  if (value >= 1000) return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-  if (value >= 1) return `$${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
-  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
+  if (value >= 1000) return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  if (value >= 1) return `$${value.toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
 }
 
-// Store in localStorage for persistence
-const STORAGE_KEY = 'telegram_rolling_window';
-const MAX_ARCHIVED_POSTS = 12; // Changed from 5 to 12 (show more posts)
-
-function loadArchivedPosts(): TelegramPost[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveArchivedPosts(posts: TelegramPost[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-  } catch {
-    // Ignore
-  }
-}
-
-export function LiveWire() {
-  const [posts, setPosts] = useState<TelegramPost[]>([]);
-  const [archivedPosts, setArchivedPosts] = useState<TelegramPost[]>(loadArchivedPosts);
+export function LiveWire({ latest }: { latest?: TelegramPost }) {
   const [markets, setMarkets] = useState<Market[]>([]);
-  const [newsError, setNewsError] = useState(false);
   const [marketError, setMarketError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const loadNews = async () => {
-      try {
-        const response = await fetch("/api/news", { cache: "no-store" });
-        if (!response.ok) throw new Error("news request failed");
-        const payload = (await response.json()) as { posts?: TelegramPost[] };
-        if (active) {
-          const allPosts = payload.posts ?? [];
-          setPosts(allPosts);
-          
-          if (allPosts.length > 0) {
-            const latestPost = allPosts[0];
-            const olderFromApi = allPosts.slice(1);
-            
-            const existingIds = new Set(archivedPosts.map(p => p.id));
-            let updatedArchive = [...archivedPosts];
-            for (const post of olderFromApi) {
-              if (!existingIds.has(post.id)) {
-                updatedArchive.push(post);
-              }
-            }
-            
-            updatedArchive = updatedArchive.filter(p => p.id !== latestPost.id);
-            updatedArchive.sort(
-              (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-            );
-            // Keep up to 12 posts (rolling window)
-            updatedArchive = updatedArchive.slice(0, MAX_ARCHIVED_POSTS);
-            
-            setArchivedPosts(updatedArchive);
-            saveArchivedPosts(updatedArchive);
-          }
-          
-          setNewsError(false);
-        }
-      } catch {
-        if (active) setNewsError(true);
-      }
-    };
-
-    void loadNews();
-    const timer = window.setInterval(loadNews, 15_000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [archivedPosts]);
 
   useEffect(() => {
     let active = true;
@@ -133,7 +45,8 @@ export function LiveWire() {
     };
   }, []);
 
-  const latestPost = posts[0];
+  const headline = latest ? splitHeadline(latest.text).headline : null;
+  const dek = latest ? splitHeadline(latest.text).dek : null;
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -141,51 +54,47 @@ export function LiveWire() {
         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <Radio className="size-4 text-primary" />
-              <h2 className="font-display text-2xl">Live Telegram wire</h2>
+              <Radio className="size-4 text-signal" />
+              <h2 className="font-display text-2xl">On the wire</h2>
             </div>
-            <p className="mt-1 text-xs text-muted">Latest post · @AlphaSignalsPro</p>
+            <p className="mt-1 text-xs text-muted">Latest from @{TELEGRAM_CHANNEL}</p>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">15s refresh</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Live</span>
         </div>
 
-        {newsError ? (
-          <p className="py-6 text-sm text-muted">Live wire is temporarily unavailable.</p>
-        ) : !latestPost ? (
-          <p className="py-6 text-sm text-muted">Waiting for the latest Telegram post.</p>
+        {!latest ? (
+          <p className="py-6 text-sm text-muted">Waiting for the next headline.</p>
         ) : (
           <article className="py-5">
-            {latestPost.hasPhoto ? (
-              <div className="mb-4 flex max-h-[420px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
+            {latest.hasPhoto ? (
+              <div className="mb-4 overflow-hidden rounded-md bg-elevated">
                 <img
-                  src={`/api/telegram-photo?id=${latestPost.id}`}
+                  src={`/api/telegram-photo?id=${latest.id}`}
                   alt=""
                   loading="eager"
                   className="max-h-[420px] w-full object-contain"
                 />
               </div>
             ) : null}
-            
+
             <h2 className="font-display text-2xl font-medium leading-snug text-foreground sm:text-3xl">
-              {latestPost.text.split('\n')[0] || latestPost.text.slice(0, 100)}
+              {headline}
             </h2>
-            
-            <p className="mt-3 text-base leading-relaxed text-muted">
-              {latestPost.text}
-            </p>
-            
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
-              <span>{formatTime(latestPost.publishedAt)}</span>
-              {latestPost.messageUrl ? (
-                <a
-                  href={latestPost.messageUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-primary hover:underline"
-                >
-                  Telegram <ExternalLink className="size-3" />
-                </a>
-              ) : null}
+
+            {dek ? (
+              <p className="mt-3 line-clamp-5 text-base leading-relaxed text-muted">{dek}</p>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
+              <span>{formatTime(latest.publishedAt)} UTC</span>
+              <a
+                href={latest.messageUrl || TELEGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                Telegram <ExternalLink className="size-3" />
+              </a>
             </div>
           </article>
         )}
@@ -194,14 +103,16 @@ export function LiveWire() {
       <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div>
-            <h2 className="font-display text-2xl">Live crypto</h2>
-            <p className="mt-1 text-xs text-muted">CoinMarketCap · USD</p>
+            <h2 className="font-display text-2xl">Spot tape</h2>
+            <p className="mt-1 text-xs text-muted">USD · session quotes</p>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">3m refresh</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Live</span>
         </div>
 
         {marketError && markets.length === 0 ? (
           <p className="py-6 text-sm text-muted">Market data is temporarily unavailable.</p>
+        ) : markets.length === 0 ? (
+          <p className="py-6 text-sm text-muted">Loading the tape…</p>
         ) : (
           <div className="divide-y divide-border">
             {markets.map((market) => (
@@ -211,9 +122,15 @@ export function LiveWire() {
                   <div className="text-xs text-muted">{market.name}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-sm">{formatPrice(market.price)}</div>
-                  <div className={market.change24h >= 0 ? "font-mono text-xs text-primary" : "font-mono text-xs text-destructive"}>
-                    {market.change24h >= 0 ? "+" : ""}{market.change24h.toFixed(2)}%
+                  <div className="font-mono text-sm tabular-nums">{formatPrice(market.price)}</div>
+                  <div
+                    className={cn(
+                      "font-mono text-xs tabular-nums",
+                      market.change24h >= 0 ? "text-up" : "text-down",
+                    )}
+                  >
+                    {market.change24h >= 0 ? "+" : ""}
+                    {market.change24h.toFixed(2)}%
                   </div>
                 </div>
               </div>
@@ -223,9 +140,4 @@ export function LiveWire() {
       </div>
     </section>
   );
-}
-
-// Export function to get archived posts (rolling window)
-export function getArchivedTelegramPosts(): TelegramPost[] {
-  return loadArchivedPosts();
 }
