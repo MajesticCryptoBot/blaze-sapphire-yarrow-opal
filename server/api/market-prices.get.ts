@@ -1,24 +1,11 @@
-const CMC_URL = "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest";
-const ASSET_IDS = [1, 1027, 52, 5426, 1839] as const;
-const SYMBOLS: Record<number, string> = {
-  1: "BTC",
-  1027: "ETH",
-  52: "XRP",
-  5426: "SOL",
-  1839: "BNB",
-};
+import { CMC_ASSETS, parseCmcMarkets, type MarketQuote } from "../../src/lib/cmc-markets";
 
+const CMC_URL = "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest";
 const CACHE_TTL_MS = 3 * 60 * 1000;
 
 type Cached = {
   fetchedAt: number;
-  data: Array<{
-    symbol: string;
-    name: string;
-    price: number;
-    change24h: number;
-    lastUpdated: string | null;
-  }>;
+  data: MarketQuote[];
 };
 
 const globalRef = globalThis as typeof globalThis & {
@@ -31,7 +18,7 @@ async function fetchPrices(): Promise<Cached> {
   if (!apiKey) throw new Error("CMC_API_KEY is not configured");
 
   const response = await fetch(
-    `${CMC_URL}?id=${ASSET_IDS.join(",")}&convert=USD`,
+    `${CMC_URL}?id=${CMC_ASSETS.map((asset) => asset.id).join(",")}&convert=USD`,
     {
       headers: {
         Accept: "application/json",
@@ -40,48 +27,30 @@ async function fetchPrices(): Promise<Cached> {
     },
   );
 
+  const rawText = await response.text();
+  let payload: unknown = {};
+  try {
+    payload = JSON.parse(rawText) as unknown;
+  } catch {
+    throw new Error(`CoinMarketCap returned non-JSON HTTP ${response.status}`);
+  }
+
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`CoinMarketCap HTTP ${response.status}: ${body.slice(0, 300)}`);
+    throw new Error(`CoinMarketCap HTTP ${response.status}: ${rawText.slice(0, 300)}`);
   }
 
-  const payload = (await response.json()) as {
-    status?: { error_code?: number | string; error_message?: string | null };
-    data?: Record<string, {
-      id: number;
-      name: string;
-      symbol: string;
-      quote?: { USD?: { price?: number; percent_change_24h?: number; last_updated?: string } };
-    }>;
-  };
-
-  if (String(payload.status?.error_code ?? "0") !== "0") {
-    throw new Error(payload.status?.error_message || "CoinMarketCap returned an error");
-  }
-
-  const data = ASSET_IDS.map((id) => {
-    const asset = payload.data?.[String(id)];
-    const usd = asset?.quote?.USD;
-    if (!asset || typeof usd?.price !== "number") {
-      throw new Error(`CoinMarketCap did not return ${SYMBOLS[id]}`);
-    }
-    return {
-      symbol: SYMBOLS[id],
-      name: asset.name,
-      price: usd.price,
-      change24h: typeof usd.percent_change_24h === "number" ? usd.percent_change_24h : 0,
-      lastUpdated: usd.last_updated ?? null,
-    };
-  });
-
-  return { fetchedAt: Date.now(), data };
+  return { fetchedAt: Date.now(), data: parseCmcMarkets(payload) };
 }
 
 export default async function handler() {
   const now = Date.now();
   const cached = globalRef.__cmcMarketCache__;
   if (cached && now - cached.fetchedAt < CACHE_TTL_MS) {
-    return Response.json({ ...cached, fetchedAt: new Date(cached.fetchedAt).toISOString(), cached: true });
+    return Response.json({
+      data: cached.data,
+      fetchedAt: new Date(cached.fetchedAt).toISOString(),
+      cached: true,
+    });
   }
 
   globalRef.__cmcMarketPromise__ ??= fetchPrices().finally(() => {
@@ -91,11 +60,16 @@ export default async function handler() {
   try {
     const fresh = await globalRef.__cmcMarketPromise__;
     globalRef.__cmcMarketCache__ = fresh;
-    return Response.json({ ...fresh, fetchedAt: new Date(fresh.fetchedAt).toISOString(), cached: false });
+    return Response.json({
+      data: fresh.data,
+      fetchedAt: new Date(fresh.fetchedAt).toISOString(),
+      cached: false,
+    });
   } catch (error) {
+    console.error("[market-prices]", error instanceof Error ? error.message : error);
     if (cached) {
       return Response.json({
-        ...cached,
+        data: cached.data,
         fetchedAt: new Date(cached.fetchedAt).toISOString(),
         cached: true,
         stale: true,

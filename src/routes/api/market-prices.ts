@@ -1,92 +1,73 @@
-// src/routes/api/market-prices.ts
 import { createFileRoute } from "@tanstack/react-router";
+import { CMC_ASSETS, parseCmcMarkets, type MarketQuote } from "@/lib/cmc-markets";
 
-const ASSETS = [
-  { id: 1, symbol: "BTC", name: "Bitcoin" },
-  { id: 1027, symbol: "ETH", name: "Ethereum" },
-  { id: 52, symbol: "XRP", name: "XRP" },
-  { id: 5426, symbol: "SOL", name: "Solana" },
-  { id: 1839, symbol: "BNB", name: "BNB" },
-] as const;
-
-type Market = { symbol: string; name: string; price: number; change24h: number; lastUpdated: string };
-type CacheState = { expiresAt: number; data: Market[] };
-const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
 const CACHE_TTL_MS = 180_000;
+type CacheState = { expiresAt: number; data: MarketQuote[] };
+const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
+
+async function fetchMarkets(): Promise<MarketQuote[]> {
+  const apiKey = process.env.CMC_API_KEY?.trim();
+  if (!apiKey) throw new Error("CMC_API_KEY is not configured in the server environment");
+
+  const url = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
+  url.searchParams.set("id", CMC_ASSETS.map((asset) => asset.id).join(","));
+  url.searchParams.set("convert", "USD");
+
+  const response = await fetch(url, {
+    headers: { "X-CMC_PRO_API_KEY": apiKey, Accept: "application/json" },
+    cache: "no-store",
+  });
+
+  const rawText = await response.text();
+  let payload: unknown = {};
+  try {
+    payload = JSON.parse(rawText) as unknown;
+  } catch {
+    throw new Error(`CoinMarketCap returned non-JSON HTTP ${response.status}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`CoinMarketCap HTTP ${response.status}: ${rawText.slice(0, 300)}`);
+  }
+
+  return parseCmcMarkets(payload);
+}
 
 export const Route = createFileRoute("/api/market-prices")({
-  loader: async () => {
-    console.log("🔵 [API] /api/market-prices called");
-    console.log("🔵 [API] CMC_API_KEY exists:", !!process.env.CMC_API_KEY);
-    
-    const now = Date.now();
-    const cached = globalRef.__cmcMarketCache__;
-    if (cached && cached.expiresAt > now) {
-      console.log("🔵 [API] Returning cached data");
-      return Response.json({ data: cached.data, cached: true });
-    }
+  server: {
+    handlers: {
+      GET: async () => {
+        const now = Date.now();
+        const cached = globalRef.__cmcMarketCache__;
 
-    try {
-      const apiKey = process.env.CMC_API_KEY?.trim();
-      const query = ASSETS.map((asset) => asset.id).join(",");
-      
-      // Try authenticated request
-      const url = new URL("https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest");
-      url.searchParams.set("id", query);
-      url.searchParams.set("convert", "USD");
-      
-      console.log("🔵 [API] Fetching from CMC");
-      
-      const headers: Record<string, string> = { Accept: "application/json" };
-      if (apiKey) headers["X-CMC_PRO_API_KEY"] = apiKey;
-
-      const response = await fetch(url.toString(), { headers });
-      
-      if (!response.ok) {
-        console.error("🔴 [API] CMC HTTP error:", response.status);
-        throw new Error(`CMC HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("🔵 [API] CMC response received");
-
-      // Parse the response
-      const markets: Market[] = [];
-      const cmcData = data.data || {};
-      
-      for (const asset of ASSETS) {
-        const coin = cmcData[asset.symbol];
-        if (coin && coin.quote?.USD) {
-          markets.push({
-            symbol: asset.symbol,
-            name: asset.name,
-            price: coin.quote.USD.price,
-            change24h: coin.quote.USD.percent_change_24h || 0,
-            lastUpdated: coin.quote.USD.last_updated || new Date().toISOString(),
-          });
+        if (cached && cached.expiresAt > now) {
+          return Response.json(
+            { data: cached.data, cached: true },
+            { headers: { "Cache-Control": "no-store" } },
+          );
         }
-      }
 
-      globalRef.__cmcMarketCache__ = { data: markets, expiresAt: now + CACHE_TTL_MS };
-      console.log("🔵 [API] Returning", markets.length, "markets");
-      
-      return Response.json({ data: markets, cached: false });
-
-    } catch (error) {
-      console.error("🔴 [API] Error:", error);
-      if (cached) {
-        return Response.json({ data: cached.data, cached: true, stale: true });
-      }
-      return Response.json(
-        { error: "Market data is temporarily unavailable" },
-        { status: 503 }
-      );
-    }
+        try {
+          const data = await fetchMarkets();
+          globalRef.__cmcMarketCache__ = { data, expiresAt: now + CACHE_TTL_MS };
+          return Response.json(
+            { data, cached: false },
+            { headers: { "Cache-Control": "no-store" } },
+          );
+        } catch (error) {
+          console.error("[market-prices]", error instanceof Error ? error.message : error);
+          if (cached) {
+            return Response.json(
+              { data: cached.data, cached: true, stale: true },
+              { headers: { "Cache-Control": "no-store" } },
+            );
+          }
+          return Response.json(
+            { error: error instanceof Error ? error.message : "Market data is temporarily unavailable" },
+            { status: 503 },
+          );
+        }
+      },
+    },
   },
 });
-
-// This handles the actual HTTP response
-export const component = () => {
-  const data = Route.useLoaderData();
-  return data; // Return the Response object from loader
-};
