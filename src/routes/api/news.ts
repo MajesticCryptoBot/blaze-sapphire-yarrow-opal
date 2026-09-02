@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/news")({
   server: {
     handlers: {
       GET: async () => {
-        const posts = await listTelegramPosts(20);
+        const posts = await listTelegramPosts(10);
         return Response.json(
           { posts },
           {
