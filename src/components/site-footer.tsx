@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="mt-16 border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <div>
-          <p className="font-display text-lg">Alpha Signals Pro</p>
+          <p className="font-display text-lg">ASP NEWS</p>
           <p className="mt-1 max-w-md text-sm text-muted">
             Independent market intelligence for crypto, macro, and AI. Headlines
             on Telegram; full briefs on this desk.
