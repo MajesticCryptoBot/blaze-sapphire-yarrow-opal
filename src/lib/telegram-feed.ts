@@ -18,7 +18,7 @@ type PostRow = {
   text: string;
   published_at: string;
   message_url: string | null;
-  photo_data: string | Uint8Array | null;
+  photo_file_id: string | null;
 };
 
 function mapRow(row: PostRow): TelegramPost {
@@ -26,7 +26,7 @@ function mapRow(row: PostRow): TelegramPost {
     id: Number(row.message_id),
     text: row.text,
     publishedAt: new Date(row.published_at).toISOString(),
-    hasPhoto: Boolean(row.photo_data),
+    hasPhoto: Boolean(row.photo_file_id),
     messageUrl: row.message_url,
   };
 }
@@ -61,15 +61,15 @@ export function splitHeadline(text: string) {
   return { headline, dek, body: lines.slice(1) };
 }
 
-export async function listTelegramPosts(limit = 48): Promise<TelegramPost[]> {
+export async function listTelegramPosts(limit = 20): Promise<TelegramPost[]> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url, photo_data
+    `select message_id, text, published_at, message_url, photo_file_id
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
       limit $2`,
-    [CHANNEL_KEY, limit],
+    [CHANNEL_KEY, Math.min(Math.max(limit, 1), 20)],
   );
   return rows.map(mapRow);
 }
@@ -77,7 +77,7 @@ export async function listTelegramPosts(limit = 48): Promise<TelegramPost[]> {
 export async function getTelegramPost(id: number): Promise<TelegramPost | null> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url, photo_data
+    `select message_id, text, published_at, message_url, photo_file_id
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
         and (message_id = $2 or id = $2)
@@ -90,7 +90,7 @@ export async function getTelegramPost(id: number): Promise<TelegramPost | null> 
 
 export async function getTelegramPhoto(id: number) {
   const sql = await getSql();
-  const rows = await sql.query<{ photo_data: Uint8Array | null; photo_mime_type: string | null }>(
+  const rows = await sql.query<{ photo_data: Uint8Array | ArrayBuffer | null; photo_mime_type: string | null }>(
     `select photo_data, photo_mime_type
        from telegram_posts
       where (message_id = $1 or id = $1)
