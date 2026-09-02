@@ -1,25 +1,20 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
-export type DbSource = "neon" | "pglite";
+export type DbSource = "turso" | "pglite";
 
-const rawDatabaseUrl =
-  typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
-const databaseUrl =
-  rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl.trim() : undefined;
-const isVercel = typeof process !== "undefined" && process.env.VERCEL === "1";
+const env = typeof process !== "undefined" ? process.env : undefined;
+const tursoUrl = env?.TURSO_DATABASE_URL?.trim() || env?.TURSO_URL?.trim();
+const tursoToken = env?.TURSO_AUTH_TOKEN?.trim();
+const isVercel = env?.VERCEL === "1";
 
-// PGlite is useful for local development, but an ephemeral serverless runtime is
-// not a safe production database. In particular, falling back to PGlite on
-// Vercel can trigger missing pglite.data assets and would also lose writes when
-// the function is recycled. Production therefore requires DATABASE_URL.
-if (isVercel && !databaseUrl) {
+if (isVercel && (!tursoUrl || !tursoToken)) {
   throw new Error(
-    "DATABASE_URL is required on Vercel. Configure a persistent PostgreSQL database (for example Neon) in the Vercel project environment variables; PGlite is only a local-development fallback.",
+    "TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are required on Vercel. Configure the Turso database in the Vercel project environment variables.",
   );
 }
 
-export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
+export const dbSource: DbSource = tursoUrl && tursoToken ? "turso" : "pglite";
 
 export interface Sql {
   <T = Record<string, unknown>>(
@@ -33,7 +28,9 @@ export interface Sql {
 }
 
 const globalRef = globalThis as typeof globalThis & {
-  __pgSqlPromise__?: Promise<Sql>;
+  __tursoSqlPromise__?: Promise<Sql>;
+  __tursoClient__?: import("@libsql/client").Client;
+  __tursoSchemaPromise__?: Promise<void>;
   __pgliteInstance__?: Promise<import("@electric-sql/pglite").PGlite>;
   __pgliteMigrateChain__?: Promise<void>;
 };
@@ -59,44 +56,36 @@ function toSql(run: Run): Sql {
   return sql;
 }
 
-function getNeonConnectionConfig() {
-  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+async function createTursoSql(): Promise<Sql> {
+  if (!tursoUrl || !tursoToken) throw new Error("Turso credentials are not configured");
 
-  // node-postgres warns when libpq-style sslmode=require is present in a
-  // connection string. Neon already requires TLS, so remove the sslmode query
-  // parameter and express the TLS requirement explicitly. This avoids the
-  // warning while retaining certificate verification through Node's CA store.
-  const url = new URL(databaseUrl);
-  url.searchParams.delete("sslmode");
-  url.searchParams.delete("sslcert");
-  url.searchParams.delete("sslkey");
-  url.searchParams.delete("sslrootcert");
+  globalRef.__tursoSqlPromise__ ??= (async () => {
+    const { createClient } = await import("@libsql/client");
+    const client = createClient({ url: tursoUrl, authToken: tursoToken });
+    globalRef.__tursoClient__ = client;
 
-  return {
-    connectionString: url.toString(),
-    ssl: { rejectUnauthorized: true },
-  };
-}
-
-function createNeonSql(): Promise<Sql> {
-  globalRef.__pgSqlPromise__ ??= (async () => {
-    const { Pool, types } = await import("pg");
-    types.setTypeParser(OID_INT8, Number);
-    types.setTypeParser(OID_DATE, identity);
-    types.setTypeParser(OID_INTERVAL, identity);
-
-    const pool = new Pool(getNeonConnectionConfig());
+    // SQLite schema used by the production Turso database. This is intentionally
+    // idempotent so an existing migrated database is left untouched.
+    globalRef.__tursoSchemaPromise__ ??= client
+      .batch([
+        { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
+        { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_published_at_idx ON telegram_posts (published_at DESC)" },
+        { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_chat_id_idx ON telegram_posts (chat_id)" },
+      ], "write")
+      .then(() => undefined);
+    await globalRef.__tursoSchemaPromise__;
 
     return toSql(async <T>(text: string, params: unknown[]) => {
-      const res = await pool.query(text, params);
-      return res.rows as T[];
+      const result = await client.execute({ sql: text, args: params as import("@libsql/client").InValue[] });
+      return result.rows as unknown as T[];
     });
   })().catch((err) => {
-    globalRef.__pgSqlPromise__ = undefined;
+    globalRef.__tursoSqlPromise__ = undefined;
+    globalRef.__tursoSchemaPromise__ = undefined;
     throw err;
   });
 
-  return globalRef.__pgSqlPromise__;
+  return globalRef.__tursoSqlPromise__;
 }
 
 async function createPgliteSql(): Promise<Sql> {
@@ -120,7 +109,6 @@ async function createPgliteSql(): Promise<Sql> {
   });
 
   const pg = await globalRef.__pgliteInstance__;
-
   const migrate = async (): Promise<void> => {
     const migrations = import.meta.glob("/migrations/**/*.sql", {
       query: "?raw",
@@ -139,12 +127,9 @@ async function createPgliteSql(): Promise<Sql> {
     }
   };
 
-  const pass = (globalRef.__pgliteMigrateChain__ ?? Promise.resolve())
-    .catch(() => undefined)
-    .then(migrate);
+  const pass = (globalRef.__pgliteMigrateChain__ ?? Promise.resolve()).catch(() => undefined).then(migrate);
   globalRef.__pgliteMigrateChain__ = pass;
   await pass;
-
   return toSql(async <T>(text: string, params: unknown[]) => {
     const result = await pg.query<T>(text, params);
     return result.rows;
@@ -155,12 +140,9 @@ let sqlPromise: Promise<Sql> | null = null;
 
 async function createSql(): Promise<Sql> {
   if (typeof window !== "undefined") {
-    throw new Error(
-      "@/lib/db is server-only — call getSql() from a createServerFn handler " +
-        "or a server route loader, never from client code.",
-    );
+    throw new Error("@/lib/db is server-only — call getSql() from a server route or loader.");
   }
-  return dbSource === "neon" ? createNeonSql() : createPgliteSql();
+  return dbSource === "turso" ? createTursoSql() : createPgliteSql();
 }
 
 export function getSql(): Promise<Sql> {
@@ -172,9 +154,7 @@ export function getSql(): Promise<Sql> {
 }
 
 export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite> {
-  if (dbSource !== "pglite") {
-    throw new Error("getPglite() is only available on the PGLite fallback (no DATABASE_URL)");
-  }
+  if (dbSource !== "pglite") throw new Error("getPglite() is only available on the PGLite fallback");
   await getSql();
   const pg = await globalRef.__pgliteInstance__;
   if (!pg) throw new Error("PGLite instance failed to initialize");
@@ -186,9 +166,7 @@ export function ensureDbReady(): Promise<void> {
   return getSql().then(() => undefined);
 }
 
-const globalBoot = globalThis as typeof globalThis & {
-  __pgBootstrapPromise__?: Promise<void>;
-};
+const globalBoot = globalThis as typeof globalThis & { __pgBootstrapPromise__?: Promise<void> };
 if (typeof window === "undefined" && dbSource === "pglite") {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
