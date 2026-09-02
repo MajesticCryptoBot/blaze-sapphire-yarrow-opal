@@ -5,10 +5,14 @@ export const Route = createFileRoute("/api/news")({
   server: {
     handlers: {
       GET: async () => {
-        const posts = await listTelegramPosts(100);
+        const posts = await listTelegramPosts(20);
         return Response.json(
           { posts },
-          { headers: { "Cache-Control": "no-store" } },
+          {
+            headers: {
+              "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+            },
+          },
         );
       },
     },
