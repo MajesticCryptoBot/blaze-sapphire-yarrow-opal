@@ -1,8 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { TagBadge } from "@/components/tag-badge";
-import { formatTime, detectTag } from "@/lib/news";
-import { getTelegramPost, parsePublicId } from "@/lib/telegram-feed";
+import { formatTime } from "@/lib/news";
+import { getTelegramPost, parsePublicId, tagFromText } from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
@@ -34,7 +34,7 @@ function ArticlePage() {
   const lines = post.text.split("\n");
   const headline = lines[0] || post.text.slice(0, 100);
   const body = lines.slice(1).join("\n") || post.text;
-  const tag = detectTag(post.text);
+  const tag = tagFromText(post.text);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
