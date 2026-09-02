@@ -44,9 +44,11 @@ async function fetchCmcMarkets(): Promise<MarketQuote[]> {
   return parseCmcMarkets(payload);
 }
 
-async function fetchBinanceStocks(): Promise<MarketQuote[]> {
-  const url = new URL("https://data-api.binance.vision/api/v3/ticker/24hr");
-  url.searchParams.set("symbols", JSON.stringify(BINANCE_SYMBOLS));
+async function fetchBinanceTicker(symbol: string): Promise<Record<string, unknown> | null> {
+  // Use Binance's primary Spot API. bStocks are Spot instruments and are not
+  // guaranteed to be exposed identically through the data-api hostname.
+  const url = new URL("https://api.binance.com/api/v3/ticker/24hr");
+  url.searchParams.set("symbol", symbol);
 
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
@@ -58,46 +60,61 @@ async function fetchBinanceStocks(): Promise<MarketQuote[]> {
   try {
     payload = JSON.parse(rawText) as unknown;
   } catch {
-    throw new Error(`Binance returned non-JSON HTTP ${response.status}`);
+    throw new Error(`Binance returned non-JSON HTTP ${response.status} for ${symbol}`);
   }
 
   if (!response.ok) {
-    throw new Error(`Binance HTTP ${response.status}: ${rawText.slice(0, 300)}`);
+    throw new Error(`Binance HTTP ${response.status} for ${symbol}: ${rawText.slice(0, 250)}`);
   }
 
-  if (!Array.isArray(payload)) {
-    throw new Error("Binance returned an unexpected ticker response");
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error(`Binance returned an unexpected ticker response for ${symbol}`);
   }
 
-  const bySymbol = new Map<string, Record<string, unknown>>();
-  for (const item of payload) {
-    if (item && typeof item === "object") {
-      const row = item as Record<string, unknown>;
-      if (typeof row.symbol === "string") bySymbol.set(row.symbol.toUpperCase(), row);
+  return payload as Record<string, unknown>;
+}
+
+async function fetchBinanceStocks(): Promise<MarketQuote[]> {
+  const results = await Promise.allSettled(BINANCE_SYMBOLS.map((symbol) => fetchBinanceTicker(symbol)));
+  const output: MarketQuote[] = [];
+
+  results.forEach((result, index) => {
+    const symbol = BINANCE_SYMBOLS[index];
+    const baseSymbol = symbol.slice(0, -4);
+
+    if (result.status === "rejected") {
+      console.warn(
+        `[market-prices] Binance ${symbol} failed:`,
+        result.reason instanceof Error ? result.reason.message : result.reason,
+      );
+      return;
     }
-  }
 
-  return BINANCE_SYMBOLS.flatMap((symbol) => {
-    const row = bySymbol.get(symbol);
+    const row = result.value;
     const rawPrice = row?.lastPrice;
     const rawChange = row?.priceChangePercent;
     const price = typeof rawPrice === "string" ? Number(rawPrice) : typeof rawPrice === "number" ? rawPrice : NaN;
     const change24h = typeof rawChange === "string" ? Number(rawChange) : typeof rawChange === "number" ? rawChange : 0;
 
     if (!Number.isFinite(price)) {
-      console.warn(`[market-prices] Binance did not return ${symbol}`);
-      return [];
+      console.warn(`[market-prices] Binance returned no valid price for ${symbol}`);
+      return;
     }
 
-    const baseSymbol = symbol.slice(0, -4);
-    return [{
+    output.push({
       symbol: baseSymbol,
       name: BINANCE_NAMES[baseSymbol] ?? `${baseSymbol} (bStocks)`,
       price,
       change24h: Number.isFinite(change24h) ? change24h : 0,
       lastUpdated: new Date().toISOString(),
-    }];
+    });
   });
+
+  if (output.length === 0) {
+    throw new Error("Binance returned no usable bStocks prices");
+  }
+
+  return output;
 }
 
 export const Route = createFileRoute("/api/market-prices")({
@@ -124,11 +141,14 @@ export const Route = createFileRoute("/api/market-prices")({
           const binanceData = binanceResult.status === "fulfilled" ? binanceResult.value : [];
 
           if (!cmcData) {
-            throw binanceResult.status === "rejected" ? binanceResult.reason : new Error("CoinMarketCap unavailable");
+            throw cmcResult.status === "rejected" ? cmcResult.reason : new Error("CoinMarketCap unavailable");
           }
 
           if (binanceResult.status === "rejected") {
-            console.warn("[market-prices] Binance unavailable:", binanceResult.reason instanceof Error ? binanceResult.reason.message : binanceResult.reason);
+            console.warn(
+              "[market-prices] Binance unavailable:",
+              binanceResult.reason instanceof Error ? binanceResult.reason.message : binanceResult.reason,
+            );
           }
 
           const data = [...cmcData, ...binanceData];
