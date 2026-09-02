@@ -2,17 +2,19 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime } from "@/lib/news";
-import { getTelegramPost, parsePublicId, tagFromText } from "@/lib/telegram-feed";
+import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
     const id = parsePublicId(params.slug);
-    if (id === null) return { post: null };
-    return { post: await getTelegramPost(id) };
+    if (id === null) return { post: null as TelegramPost | null };
+
+    const response = await fetch(`/api/news/${id}`);
+    if (!response.ok) return { post: null as TelegramPost | null };
+    const payload = (await response.json()) as { post?: TelegramPost };
+    return { post: payload.post ?? null };
   },
-  head: () => ({
-    meta: [{ title: "Alpha Signals Pro" }],
-  }),
+  head: () => ({ meta: [{ title: "Alpha Signals Pro" }] }),
   component: ArticlePage,
 });
 
@@ -31,9 +33,8 @@ function ArticlePage() {
     );
   }
 
-  const lines = post.text.split("\n");
-  const headline = lines[0] || post.text.slice(0, 100);
-  const body = lines.slice(1).join("\n") || post.text;
+  const { headline, dek } = splitHeadline(post.text);
+  const body = dek ? [dek] : [headline];
   const tag = tagFromText(post.text);
 
   return (
@@ -59,7 +60,7 @@ function ArticlePage() {
         ) : null}
 
         <div className="mt-8 space-y-5 text-[17px] leading-7 text-foreground/92">
-          {body.split("\n").map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
 
         {post.messageUrl ? (
