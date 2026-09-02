@@ -11,6 +11,16 @@ const BINANCE_NAMES: Record<string, string> = {
   NVDAB: "NVIDIA (bStocks)",
 };
 
+const BINANCE_BASE_URLS = [
+  "https://data-api.binance.vision",
+  "https://api-gcp.binance.com",
+  "https://api.binance.com",
+  "https://api1.binance.com",
+  "https://api2.binance.com",
+  "https://api3.binance.com",
+  "https://api4.binance.com",
+] as const;
+
 type CacheState = { expiresAt: number; data: MarketQuote[] };
 const globalRef = globalThis as typeof globalThis & {
   __cmcMarketCache__?: CacheState;
@@ -44,38 +54,65 @@ async function fetchCmcMarkets(): Promise<MarketQuote[]> {
   return parseCmcMarkets(payload);
 }
 
-async function fetchBinanceTicker(symbol: string): Promise<Record<string, unknown> | null> {
-  // Use Binance's primary Spot API. bStocks are Spot instruments and are not
-  // guaranteed to be exposed identically through the data-api hostname.
-  const url = new URL("https://api.binance.com/api/v3/ticker/24hr");
-  url.searchParams.set("symbol", symbol);
+async function requestBinanceTicker(symbol: string): Promise<Record<string, unknown>> {
+  const failures: string[] = [];
 
-  const response = await fetch(url, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
+  for (const baseUrl of BINANCE_BASE_URLS) {
+    try {
+      const url = new URL(`${baseUrl}/api/v3/ticker/24hr`);
+      url.searchParams.set("symbol", symbol);
 
-  const rawText = await response.text();
-  let payload: unknown;
-  try {
-    payload = JSON.parse(rawText) as unknown;
-  } catch {
-    throw new Error(`Binance returned non-JSON HTTP ${response.status} for ${symbol}`);
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "ASP-News-Market-Feed/1.0",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000),
+      });
+
+      const rawText = await response.text();
+      let payload: unknown;
+      try {
+        payload = JSON.parse(rawText) as unknown;
+      } catch {
+        failures.push(`${baseUrl}: HTTP ${response.status}, non-JSON response`);
+        continue;
+      }
+
+      if (!response.ok) {
+        const detail =
+          typeof payload === "object" && payload !== null && "msg" in payload
+            ? String((payload as { msg?: unknown }).msg ?? "")
+            : rawText.slice(0, 120);
+        failures.push(`${baseUrl}: HTTP ${response.status} ${detail}`);
+        continue;
+      }
+
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        failures.push(`${baseUrl}: unexpected response shape`);
+        continue;
+      }
+
+      const row = payload as Record<string, unknown>;
+      const returnedSymbol = String(row.symbol ?? "");
+      if (returnedSymbol !== symbol) {
+        failures.push(`${baseUrl}: returned symbol ${returnedSymbol || "<empty>"}`);
+        continue;
+      }
+
+      console.info(`[market-prices] Binance ${symbol} served by ${baseUrl}`);
+      return row;
+    } catch (error) {
+      failures.push(`${baseUrl}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(`Binance HTTP ${response.status} for ${symbol}: ${rawText.slice(0, 250)}`);
-  }
-
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error(`Binance returned an unexpected ticker response for ${symbol}`);
-  }
-
-  return payload as Record<string, unknown>;
+  throw new Error(`All Binance endpoints failed for ${symbol}: ${failures.join(" | ")}`);
 }
 
 async function fetchBinanceStocks(): Promise<MarketQuote[]> {
-  const results = await Promise.allSettled(BINANCE_SYMBOLS.map((symbol) => fetchBinanceTicker(symbol)));
+  const results = await Promise.allSettled(BINANCE_SYMBOLS.map((symbol) => requestBinanceTicker(symbol)));
   const output: MarketQuote[] = [];
 
   results.forEach((result, index) => {
@@ -91,10 +128,8 @@ async function fetchBinanceStocks(): Promise<MarketQuote[]> {
     }
 
     const row = result.value;
-    const rawPrice = row?.lastPrice;
-    const rawChange = row?.priceChangePercent;
-    const price = typeof rawPrice === "string" ? Number(rawPrice) : typeof rawPrice === "number" ? rawPrice : NaN;
-    const change24h = typeof rawChange === "string" ? Number(rawChange) : typeof rawChange === "number" ? rawChange : 0;
+    const price = Number(row.lastPrice);
+    const change24h = Number(row.priceChangePercent);
 
     if (!Number.isFinite(price)) {
       console.warn(`[market-prices] Binance returned no valid price for ${symbol}`);
@@ -114,6 +149,7 @@ async function fetchBinanceStocks(): Promise<MarketQuote[]> {
     throw new Error("Binance returned no usable bStocks prices");
   }
 
+  console.info(`[market-prices] Binance bStocks loaded: ${output.length}/${BINANCE_SYMBOLS.length}`);
   return output;
 }
 
