@@ -18,8 +18,7 @@ type PostRow = {
   text: string;
   published_at: string;
   message_url: string | null;
-  photo_file_id: string | null;
-  photo_data?: Uint8Array | ArrayBuffer | null;
+  has_photo: number | boolean;
 };
 
 function mapRow(row: PostRow): TelegramPost {
@@ -27,7 +26,7 @@ function mapRow(row: PostRow): TelegramPost {
     id: Number(row.message_id),
     text: row.text,
     publishedAt: new Date(row.published_at).toISOString(),
-    hasPhoto: Boolean(row.photo_file_id || row.photo_data),
+    hasPhoto: Boolean(row.has_photo),
     messageUrl: row.message_url,
   };
 }
@@ -65,7 +64,8 @@ export function splitHeadline(text: string) {
 export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url, photo_file_id, photo_data
+    `select message_id, text, published_at, message_url,
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
@@ -78,7 +78,8 @@ export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
 export async function getTelegramPost(id: number): Promise<TelegramPost | null> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url, photo_file_id, photo_data
+    `select message_id, text, published_at, message_url,
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
         and (message_id = $2 or id = $2)
