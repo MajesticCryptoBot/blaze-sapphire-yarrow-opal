@@ -54,13 +54,14 @@ async function fetchCmcMarkets(): Promise<MarketQuote[]> {
   return parseCmcMarkets(payload);
 }
 
-async function requestBinanceTicker(symbol: string): Promise<Record<string, unknown>> {
+async function fetchBinanceStocks(): Promise<MarketQuote[]> {
+  const symbolsParam = JSON.stringify([...BINANCE_SYMBOLS]);
   const failures: string[] = [];
 
   for (const baseUrl of BINANCE_BASE_URLS) {
     try {
       const url = new URL(`${baseUrl}/api/v3/ticker/24hr`);
-      url.searchParams.set("symbol", symbol);
+      url.searchParams.set("symbols", symbolsParam);
 
       const response = await fetch(url, {
         headers: {
@@ -68,7 +69,7 @@ async function requestBinanceTicker(symbol: string): Promise<Record<string, unkn
           "User-Agent": "ASP-News-Market-Feed/1.0",
         },
         cache: "no-store",
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(8000),
       });
 
       const rawText = await response.text();
@@ -76,11 +77,11 @@ async function requestBinanceTicker(symbol: string): Promise<Record<string, unkn
       try {
         payload = JSON.parse(rawText) as unknown;
       } catch {
-        failures.push(`${baseUrl}: HTTP ${response.status}, non-JSON response`);
+        failures.push(`${baseUrl}: HTTP ${response.status}, non-JSON`);
         continue;
       }
 
-      if (!response.ok) {
+      if (!response.ok || !Array.isArray(payload)) {
         const detail =
           typeof payload === "object" && payload !== null && "msg" in payload
             ? String((payload as { msg?: unknown }).msg ?? "")
@@ -89,68 +90,43 @@ async function requestBinanceTicker(symbol: string): Promise<Record<string, unkn
         continue;
       }
 
-      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        failures.push(`${baseUrl}: unexpected response shape`);
+      const bySymbol = new Map<string, Record<string, unknown>>();
+      for (const row of payload) {
+        if (!row || typeof row !== "object") continue;
+        const item = row as Record<string, unknown>;
+        const symbol = String(item.symbol ?? "");
+        if (symbol) bySymbol.set(symbol, item);
+      }
+
+      const output: MarketQuote[] = [];
+      for (const symbol of BINANCE_SYMBOLS) {
+        const row = bySymbol.get(symbol);
+        if (!row) continue;
+        const price = Number(row.lastPrice);
+        const change24h = Number(row.priceChangePercent);
+        if (!Number.isFinite(price)) continue;
+        const baseSymbol = symbol.slice(0, -4);
+        output.push({
+          symbol: baseSymbol,
+          name: BINANCE_NAMES[baseSymbol] ?? `${baseSymbol} (bStocks)`,
+          price,
+          change24h: Number.isFinite(change24h) ? change24h : 0,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+
+      if (output.length === 0) {
+        failures.push(`${baseUrl}: no usable bStocks prices`);
         continue;
       }
 
-      const row = payload as Record<string, unknown>;
-      const returnedSymbol = String(row.symbol ?? "");
-      if (returnedSymbol !== symbol) {
-        failures.push(`${baseUrl}: returned symbol ${returnedSymbol || "<empty>"}`);
-        continue;
-      }
-
-      console.info(`[market-prices] Binance ${symbol} served by ${baseUrl}`);
-      return row;
+      return output;
     } catch (error) {
       failures.push(`${baseUrl}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  throw new Error(`All Binance endpoints failed for ${symbol}: ${failures.join(" | ")}`);
-}
-
-async function fetchBinanceStocks(): Promise<MarketQuote[]> {
-  const results = await Promise.allSettled(BINANCE_SYMBOLS.map((symbol) => requestBinanceTicker(symbol)));
-  const output: MarketQuote[] = [];
-
-  results.forEach((result, index) => {
-    const symbol = BINANCE_SYMBOLS[index];
-    const baseSymbol = symbol.slice(0, -4);
-
-    if (result.status === "rejected") {
-      console.warn(
-        `[market-prices] Binance ${symbol} failed:`,
-        result.reason instanceof Error ? result.reason.message : result.reason,
-      );
-      return;
-    }
-
-    const row = result.value;
-    const price = Number(row.lastPrice);
-    const change24h = Number(row.priceChangePercent);
-
-    if (!Number.isFinite(price)) {
-      console.warn(`[market-prices] Binance returned no valid price for ${symbol}`);
-      return;
-    }
-
-    output.push({
-      symbol: baseSymbol,
-      name: BINANCE_NAMES[baseSymbol] ?? `${baseSymbol} (bStocks)`,
-      price,
-      change24h: Number.isFinite(change24h) ? change24h : 0,
-      lastUpdated: new Date().toISOString(),
-    });
-  });
-
-  if (output.length === 0) {
-    throw new Error("Binance returned no usable bStocks prices");
-  }
-
-  console.info(`[market-prices] Binance bStocks loaded: ${output.length}/${BINANCE_SYMBOLS.length}`);
-  return output;
+  throw new Error(`Binance bStocks unavailable: ${failures.join(" | ")}`);
 }
 
 export const Route = createFileRoute("/api/market-prices")({

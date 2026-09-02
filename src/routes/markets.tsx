@@ -56,8 +56,8 @@ function Markets() {
       </p>
       <h1 className="mt-3 font-display text-4xl font-medium">Markets</h1>
       <p className="mt-3 max-w-xl text-muted">
-        Live USD quotes for Bitcoin, Ether, XRP, Solana, and BNB — the core
-        complex we cover on the wire.
+        Live USD quotes for Bitcoin, Ether, XRP, Solana, and BNB, plus Binance
+        bStocks for SpaceX, Tesla, Apple, Strategy, and NVIDIA.
       </p>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-border">

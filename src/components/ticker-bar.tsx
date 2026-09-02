@@ -7,7 +7,9 @@ type LiveMarket = {
   change24h: number;
 };
 
-const SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
+const CRYPTO_SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
+const BSTOCK_SYMBOLS = ["SPCXB", "TSLAB", "AAPLB", "MSTRB", "NVDAB"] as const;
+const SYMBOLS = [...CRYPTO_SYMBOLS, ...BSTOCK_SYMBOLS];
 const REFRESH_MS = 180_000;
 
 function formatPrice(price: number) {
@@ -57,7 +59,7 @@ export function TickerBar() {
   return (
     <div className="border-y border-border bg-surface">
       <div className="flex overflow-hidden">
-        <div className="flex min-w-max animate-[ticker_24s_linear_infinite] motion-reduce:animate-none">
+        <div className="flex min-w-max animate-[ticker_36s_linear_infinite] motion-reduce:animate-none">
           {loop.map((t, i) => {
             const up = (t.change ?? 0) >= 0;
             return (
