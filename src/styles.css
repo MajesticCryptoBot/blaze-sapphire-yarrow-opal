@@ -88,3 +88,12 @@
   }
 }
 
+/* ADD THIS AT THE END - Times New Roman for body text */
+article p,
+article div p,
+[class*="text-foreground"] p,
+.article-body p,
+.prose p {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
