@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { StoryPhotos } from "@/components/story-photos";
+import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime } from "@/lib/news";
 import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
@@ -54,7 +55,11 @@ function ArticlePage() {
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
 
-        {post.hasPhoto ? (
+        {post.hasVideo ? (
+          <div className="mt-6">
+            <StoryVideo id={post.id} mimeType={post.videoMimeType} />
+          </div>
+        ) : post.hasPhoto ? (
           <div className="mt-6">
             <StoryPhotos
               id={post.id}
