@@ -11,6 +11,8 @@ export type TelegramPost = {
   publishedAt: string;
   hasPhoto: boolean;
   hasPhoto2: boolean;
+  hasVideo: boolean;
+  videoMimeType: string | null;
   messageUrl: string | null;
 };
 
@@ -21,6 +23,8 @@ type PostRow = {
   message_url: string | null;
   has_photo: number | boolean;
   has_photo_2: number | boolean;
+  has_video?: number | boolean;
+  video_mime_type?: string | null;
 };
 
 function mapRow(row: PostRow): TelegramPost {
@@ -30,6 +34,8 @@ function mapRow(row: PostRow): TelegramPost {
     publishedAt: new Date(row.published_at).toISOString(),
     hasPhoto: Boolean(row.has_photo),
     hasPhoto2: Boolean(row.has_photo_2),
+    hasVideo: Boolean(row.has_video),
+    videoMimeType: row.video_mime_type ?? null,
     messageUrl: row.message_url,
   };
 }
@@ -69,7 +75,9 @@ export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
   const rows = await sql.query<PostRow>(
     `select message_id, text, published_at, message_url,
             case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
-            case when photo_data_2 is not null then 1 else 0 end as has_photo_2
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
+            case when video_data is not null then 1 else 0 end as has_video,
+            video_mime_type
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
@@ -84,7 +92,9 @@ export async function getTelegramPost(id: number): Promise<TelegramPost | null> 
   const rows = await sql.query<PostRow>(
     `select message_id, text, published_at, message_url,
             case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
-            case when photo_data_2 is not null then 1 else 0 end as has_photo_2
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
+            case when video_data is not null then 1 else 0 end as has_video,
+            video_mime_type
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
         and (message_id = $2 or id = $2)
@@ -101,6 +111,20 @@ export async function getTelegramPhoto(id: number, photoNumber = 1) {
   const mimeColumn = photoNumber === 2 ? "photo_mime_type_2" : "photo_mime_type";
   const rows = await sql.query<{ photo_data: Uint8Array | ArrayBuffer | null; photo_mime_type: string | null }>(
     `select ${column} as photo_data, ${mimeColumn} as photo_mime_type
+       from telegram_posts
+      where (message_id = $1 or id = $1)
+        and lower(replace(coalesce(chat_username, ''), '@', '')) = $2
+      order by published_at desc
+      limit 1`,
+    [id, CHANNEL_KEY],
+  );
+  return rows[0] ?? null;
+}
+
+export async function getTelegramVideo(id: number) {
+  const sql = await getSql();
+  const rows = await sql.query<{ video_data: Uint8Array | ArrayBuffer | null; video_mime_type: string | null }>(
+    `select video_data, video_mime_type
        from telegram_posts
       where (message_id = $1 or id = $1)
         and lower(replace(coalesce(chat_username, ''), '@', '')) = $2
