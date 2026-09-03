@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-const INGEST_VERSION = "ASP-INGEST-V10-TWO-PHOTOS-20260903";
+const INGEST_VERSION = "ASP-INGEST-V11-TWO-PHOTOS-20260903";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 
@@ -59,8 +59,18 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         const photoBase64_2 = body.photoBase64_2?.trim() || null;
         const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
         const photoBuffer2 = photoBase64_2 ? Buffer.from(photoBase64_2, "base64") : null;
+
+        // Defensive guard: never store the same image twice as photo 1 + photo 2.
+        // This does not affect genuinely different album photos.
+        const duplicateSecondPhoto = Boolean(
+          photoBuffer && photoBuffer2 && photoBuffer.equals(photoBuffer2),
+        );
+        const storedPhotoBuffer2 = duplicateSecondPhoto ? null : photoBuffer2;
+        const storedPhotoMimeType2 = storedPhotoBuffer2
+          ? (body.photoMimeType_2?.trim() || "image/jpeg")
+          : null;
+
         const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
-        const photoMimeType2 = photoBuffer2 ? (body.photoMimeType_2?.trim() || "image/jpeg") : null;
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
           return json({ ok: false, error: "messageId must be a positive integer", version: INGEST_VERSION }, 400);
@@ -99,8 +109,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
               publishedAt.toISOString(),
               photoBuffer,
               photoMimeType,
-              photoBuffer2,
-              photoMimeType2,
+              storedPhotoBuffer2,
+              storedPhotoMimeType2,
               body.messageUrl || `https://t.me/${CANONICAL_CHANNEL}/${messageId}`,
             ],
           );
@@ -111,7 +121,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
             version: INGEST_VERSION,
             channel: CANONICAL_CHANNEL,
             receivedChannel,
-            photoCount: Number(Boolean(photoBuffer)) + Number(Boolean(photoBuffer2)),
+            photoCount: Number(Boolean(photoBuffer)) + Number(Boolean(storedPhotoBuffer2)),
+            duplicateSecondPhotoIgnored: duplicateSecondPhoto,
           });
         } catch (error) {
           console.error("ASP news ingest database error:", error);
