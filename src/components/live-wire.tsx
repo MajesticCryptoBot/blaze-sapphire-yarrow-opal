@@ -1,5 +1,6 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
+import { StoryPhotos } from "@/components/story-photos";
 import { formatTime } from "@/lib/news";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -67,29 +68,13 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
         ) : (
           <article className="py-5">
             {latest.hasPhoto ? (
-              <div
-                className={cn(
-                  "mb-4 overflow-hidden rounded-md bg-elevated",
-                  latest.hasPhoto2 ? "grid grid-cols-2 gap-1" : "",
-                )}
-              >
-                <img
-                  src={`/api/telegram-photo?id=${latest.id}&photo=1`}
-                  alt=""
-                  loading="eager"
-                  className={cn(
-                    "w-full object-cover",
-                    latest.hasPhoto2 ? "aspect-square max-h-[260px]" : "max-h-[420px] object-contain",
-                  )}
+              <div className="mb-4">
+                <StoryPhotos
+                  id={latest.id}
+                  hasPhoto={latest.hasPhoto}
+                  hasPhoto2={latest.hasPhoto2}
+                  size="wire"
                 />
-                {latest.hasPhoto2 ? (
-                  <img
-                    src={`/api/telegram-photo?id=${latest.id}&photo=2`}
-                    alt=""
-                    loading="eager"
-                    className="aspect-square max-h-[260px] w-full object-cover"
-                  />
-                ) : null}
               </div>
             ) : null}
 

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { StoryPhotos } from "@/components/story-photos";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime } from "@/lib/news";
 import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
@@ -54,8 +55,13 @@ function ArticlePage() {
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
 
         {post.hasPhoto ? (
-          <div className="mt-6 flex max-h-[600px] w-full items-center justify-center overflow-hidden rounded-md bg-background">
-            <img src={`/api/telegram-photo?id=${post.id}`} alt="" loading="eager" className="max-h-[600px] w-full object-contain" />
+          <div className="mt-6">
+            <StoryPhotos
+              id={post.id}
+              hasPhoto={post.hasPhoto}
+              hasPhoto2={post.hasPhoto2}
+              size="article"
+            />
           </div>
         ) : null}
 

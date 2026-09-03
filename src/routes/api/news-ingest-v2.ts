@@ -40,7 +40,9 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           photoBase64?: string | null;
           photoMimeType?: string | null;
           photoBase64_2?: string | null;
+          photoBase642?: string | null;
           photoMimeType_2?: string | null;
+          photoMimeType2?: string | null;
         };
 
         try {
@@ -56,7 +58,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           ? body.channelUsername.trim().replace(/^@/, "")
           : "";
         const photoBase64 = body.photoBase64?.trim() || null;
-        const photoBase64_2 = body.photoBase64_2?.trim() || null;
+        const photoBase64_2 = body.photoBase64_2?.trim() || body.photoBase642?.trim() || null;
         const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
         const photoBuffer2 = photoBase64_2 ? Buffer.from(photoBase64_2, "base64") : null;
 
@@ -67,7 +69,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         );
         const storedPhotoBuffer2 = duplicateSecondPhoto ? null : photoBuffer2;
         const storedPhotoMimeType2 = storedPhotoBuffer2
-          ? (body.photoMimeType_2?.trim() || "image/jpeg")
+          ? (body.photoMimeType_2?.trim() || body.photoMimeType2?.trim() || "image/jpeg")
           : null;
 
         const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
