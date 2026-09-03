@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-const INGEST_VERSION = "ASP-INGEST-V9-TURSO-20260902";
+const INGEST_VERSION = "ASP-INGEST-V10-TWO-PHOTOS-20260903";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 
@@ -39,6 +39,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           channelUsername?: string;
           photoBase64?: string | null;
           photoMimeType?: string | null;
+          photoBase64_2?: string | null;
+          photoMimeType_2?: string | null;
         };
 
         try {
@@ -54,8 +56,11 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           ? body.channelUsername.trim().replace(/^@/, "")
           : "";
         const photoBase64 = body.photoBase64?.trim() || null;
+        const photoBase64_2 = body.photoBase64_2?.trim() || null;
         const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
+        const photoBuffer2 = photoBase64_2 ? Buffer.from(photoBase64_2, "base64") : null;
         const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
+        const photoMimeType2 = photoBuffer2 ? (body.photoMimeType_2?.trim() || "image/jpeg") : null;
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
           return json({ ok: false, error: "messageId must be a positive integer", version: INGEST_VERSION }, 400);
@@ -66,18 +71,24 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         if (photoBase64 && photoBase64.length > MAX_PHOTO_BASE64) {
           return json({ ok: false, error: "Photo is too large", version: INGEST_VERSION }, 413);
         }
+        if (photoBase64_2 && photoBase64_2.length > MAX_PHOTO_BASE64) {
+          return json({ ok: false, error: "Second photo is too large", version: INGEST_VERSION }, 413);
+        }
 
         try {
           const sql = await getSql();
           await sql.query(
             `insert into telegram_posts
-               (chat_id, message_id, chat_username, chat_title, text, published_at, photo_data, photo_mime_type, message_url, updated_at)
-             values ($1, $2, $3, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+               (chat_id, message_id, chat_username, chat_title, text, published_at,
+                photo_data, photo_mime_type, photo_data_2, photo_mime_type_2, message_url, updated_at)
+             values ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
              on conflict (chat_id, message_id) do update set
                text = excluded.text,
                published_at = excluded.published_at,
                photo_data = coalesce(excluded.photo_data, telegram_posts.photo_data),
                photo_mime_type = coalesce(excluded.photo_mime_type, telegram_posts.photo_mime_type),
+               photo_data_2 = coalesce(excluded.photo_data_2, telegram_posts.photo_data_2),
+               photo_mime_type_2 = coalesce(excluded.photo_mime_type_2, telegram_posts.photo_mime_type_2),
                message_url = excluded.message_url,
                updated_at = CURRENT_TIMESTAMP`,
             [
@@ -88,11 +99,20 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
               publishedAt.toISOString(),
               photoBuffer,
               photoMimeType,
+              photoBuffer2,
+              photoMimeType2,
               body.messageUrl || `https://t.me/${CANONICAL_CHANNEL}/${messageId}`,
             ],
           );
 
-          return json({ ok: true, messageId, version: INGEST_VERSION, channel: CANONICAL_CHANNEL, receivedChannel });
+          return json({
+            ok: true,
+            messageId,
+            version: INGEST_VERSION,
+            channel: CANONICAL_CHANNEL,
+            receivedChannel,
+            photoCount: Number(Boolean(photoBuffer)) + Number(Boolean(photoBuffer2)),
+          });
         } catch (error) {
           console.error("ASP news ingest database error:", error);
           return json({ ok: false, error: "Database error", version: INGEST_VERSION }, 500);
