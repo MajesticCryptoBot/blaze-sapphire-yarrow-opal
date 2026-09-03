@@ -87,17 +87,3 @@
     transform: translateX(-50%);
   }
 }
-
-/* WSJ-style serif with refined typography - Dark theme */
-article p,
-article div p,
-[class*="text-foreground"] p,
-.article-body p,
-.prose p {
-  font-family: "Chronicle SSM", "Charter", "Georgia", "Times New Roman", Times, serif !important;
-  font-size: 1.125rem !important;
-  line-height: 1.7 !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.01em !important;
-  color: var(--color-foreground) !important; /* Uses your theme's foreground color (white) */
-}
