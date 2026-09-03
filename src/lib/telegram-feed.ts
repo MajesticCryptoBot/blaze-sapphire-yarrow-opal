@@ -10,6 +10,7 @@ export type TelegramPost = {
   text: string;
   publishedAt: string;
   hasPhoto: boolean;
+  hasPhoto2: boolean;
   messageUrl: string | null;
 };
 
@@ -19,6 +20,7 @@ type PostRow = {
   published_at: string;
   message_url: string | null;
   has_photo: number | boolean;
+  has_photo_2: number | boolean;
 };
 
 function mapRow(row: PostRow): TelegramPost {
@@ -27,6 +29,7 @@ function mapRow(row: PostRow): TelegramPost {
     text: row.text,
     publishedAt: new Date(row.published_at).toISOString(),
     hasPhoto: Boolean(row.has_photo),
+    hasPhoto2: Boolean(row.has_photo_2),
     messageUrl: row.message_url,
   };
 }
@@ -65,7 +68,8 @@ export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
     `select message_id, text, published_at, message_url,
-            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
@@ -79,7 +83,8 @@ export async function getTelegramPost(id: number): Promise<TelegramPost | null> 
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
     `select message_id, text, published_at, message_url,
-            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
         and (message_id = $2 or id = $2)
@@ -90,10 +95,12 @@ export async function getTelegramPost(id: number): Promise<TelegramPost | null> 
   return rows[0] ? mapRow(rows[0]) : null;
 }
 
-export async function getTelegramPhoto(id: number) {
+export async function getTelegramPhoto(id: number, photoNumber = 1) {
   const sql = await getSql();
+  const column = photoNumber === 2 ? "photo_data_2" : "photo_data";
+  const mimeColumn = photoNumber === 2 ? "photo_mime_type_2" : "photo_mime_type";
   const rows = await sql.query<{ photo_data: Uint8Array | ArrayBuffer | null; photo_mime_type: string | null }>(
-    `select photo_data, photo_mime_type
+    `select ${column} as photo_data, ${mimeColumn} as photo_mime_type
        from telegram_posts
       where (message_id = $1 or id = $1)
         and lower(replace(coalesce(chat_username, ''), '@', '')) = $2
