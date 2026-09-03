@@ -1,6 +1,7 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StoryPhotos } from "@/components/story-photos";
+import { StoryVideo } from "@/components/story-video";
 import { formatTime } from "@/lib/news";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,11 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <p className="py-6 text-sm text-muted">Waiting for the next headline.</p>
         ) : (
           <article className="py-5">
-            {latest.hasPhoto ? (
+            {latest.hasVideo ? (
+              <div className="mb-4">
+                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} />
+              </div>
+            ) : latest.hasPhoto ? (
               <div className="mb-4">
                 <StoryPhotos
                   id={latest.id}
