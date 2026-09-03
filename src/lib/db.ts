@@ -65,14 +65,22 @@ async function createTursoSql(): Promise<Sql> {
     globalRef.__tursoClient__ = client;
 
     // SQLite schema used by the production Turso database. This is intentionally
-    // idempotent so an existing migrated database is left untouched.
-    globalRef.__tursoSchemaPromise__ ??= client
-      .batch([
-        { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
+    // idempotent so an existing database is left untouched except for the
+    // additive second-photo columns required by the Telegram album feature.
+    globalRef.__tursoSchemaPromise__ ??= (async () => {
+      await client.batch([
+        { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, photo_data_2 BLOB, photo_mime_type_2 TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
         { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_published_at_idx ON telegram_posts (published_at DESC)" },
         { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_chat_id_idx ON telegram_posts (chat_id)" },
-      ], "write")
-      .then(() => undefined);
+      ], "write");
+
+      const columns = await client.execute("PRAGMA table_info(telegram_posts)");
+      const names = new Set(columns.rows.map((row) => String(row.name)));
+      const additions = [];
+      if (!names.has("photo_data_2")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_data_2 BLOB" });
+      if (!names.has("photo_mime_type_2")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_mime_type_2 TEXT" });
+      if (additions.length) await client.batch(additions, "write");
+    })();
     await globalRef.__tursoSchemaPromise__;
 
     return toSql(async <T>(text: string, params: unknown[]) => {
