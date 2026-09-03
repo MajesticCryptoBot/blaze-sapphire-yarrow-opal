@@ -67,13 +67,29 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
         ) : (
           <article className="py-5">
             {latest.hasPhoto ? (
-              <div className="mb-4 overflow-hidden rounded-md bg-elevated">
+              <div
+                className={cn(
+                  "mb-4 overflow-hidden rounded-md bg-elevated",
+                  latest.hasPhoto2 ? "grid grid-cols-2 gap-1" : "",
+                )}
+              >
                 <img
-                  src={`/api/telegram-photo?id=${latest.id}`}
+                  src={`/api/telegram-photo?id=${latest.id}&photo=1`}
                   alt=""
                   loading="eager"
-                  className="max-h-[420px] w-full object-contain"
+                  className={cn(
+                    "w-full object-cover",
+                    latest.hasPhoto2 ? "aspect-square max-h-[260px]" : "max-h-[420px] object-contain",
+                  )}
                 />
+                {latest.hasPhoto2 ? (
+                  <img
+                    src={`/api/telegram-photo?id=${latest.id}&photo=2`}
+                    alt=""
+                    loading="eager"
+                    className="aspect-square max-h-[260px] w-full object-cover"
+                  />
+                ) : null}
               </div>
             ) : null}
 
