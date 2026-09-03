@@ -88,12 +88,14 @@
   }
 }
 
-/* ADD THIS AT THE END - Times New Roman for body text */
+/* Article body text - Times New Roman with bigger size */
 article p,
 article div p,
 [class*="text-foreground"] p,
 .article-body p,
 .prose p {
   font-family: "Times New Roman", Times, serif !important;
+  font-size: 1.125rem !important; /* 18px - one step up from 17px */
+  line-height: 1.7 !important; /* Slightly more breathing room */
 }
 
