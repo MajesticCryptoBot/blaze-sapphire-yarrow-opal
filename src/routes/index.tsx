@@ -8,7 +8,12 @@ import { CATEGORIES, type Article } from "@/lib/news";
 import { TELEGRAM_URL, categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search.q === "string" ? search.q : "",
+  }),
+  component: Home,
+});
 
 function toArticle(post: TelegramPost): Article & { _telegramId: number; _hasPhoto: boolean; _messageUrl: string | null } {
   const { headline, dek } = splitHeadline(post.text);
@@ -30,10 +35,15 @@ function toArticle(post: TelegramPost): Article & { _telegramId: number; _hasPho
 }
 
 function Home() {
-  const [q, setQ] = useState("");
+  const { q: searchQuery } = Route.useSearch();
+  const [q, setQ] = useState(searchQuery);
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [posts, setPosts] = useState<TelegramPost[]>([]);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setQ(searchQuery);
+  }, [searchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -64,7 +74,8 @@ function Home() {
       const inCat = cat === "All" || a.category === cat;
       if (!inCat) return false;
       if (!query) return true;
-      return a.headline.toLowerCase().includes(query) || a.dek.toLowerCase().includes(query) || a.category.toLowerCase().includes(query);
+      const haystack = [a.headline, a.dek, a.body.join(" "), a.category, a.tag, a.tickers.join(" ")].join(" ").toLowerCase();
+      return haystack.includes(query);
     });
   }, [q, cat, allArticles]);
 
