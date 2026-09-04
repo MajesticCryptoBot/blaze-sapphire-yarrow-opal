@@ -75,6 +75,9 @@ function Home() {
       if (!inCat) return false;
       if (!query) return true;
       const haystack = [a.headline, a.dek, a.body.join(" "), a.category, a.tag, a.tickers.join(" ")].join(" ").toLowerCase();
+      if (query.length <= 3) {
+        return new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(haystack);
+      }
       return haystack.includes(query);
     });
   }, [q, cat, allArticles]);
@@ -91,7 +94,7 @@ function Home() {
 
       <LiveWire latest={posts[0]} />
 
-      <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div id="feed" className="mt-10 flex scroll-mt-24 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search the wire" className="pl-10" aria-label="Search the wire" />

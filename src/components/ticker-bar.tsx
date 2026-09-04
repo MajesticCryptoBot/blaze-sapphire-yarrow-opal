@@ -120,7 +120,7 @@ export function TickerBar() {
   const loop = [...items, ...items];
 
   return (
-    <div className="border-y border-border bg-surface">
+    <div className="border-y border-border bg-surface md:pl-12">
       <div className="flex overflow-hidden">
         <div className="flex min-w-max animate-[ticker_36s_linear_infinite] motion-reduce:animate-none">
           {loop.map((t, i) => {

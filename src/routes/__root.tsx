@@ -1,7 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
-import { SideBar } from "@/components/side-bar";
+import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TickerBar } from "@/components/ticker-bar";
@@ -43,15 +43,19 @@ export const Route = createRootRoute({
       <body className="bg-bg text-foreground">
         <PreviewHostBridge />
         <AuthProvider>
-          <div className="flex min-h-dvh flex-col">
-            <SiteHeader />
-            <TickerBar />
-            <SideBar />
-            <div className="flex-1">
-              <Outlet />
+          <SiteNavProvider>
+            <div className="flex min-h-dvh flex-col">
+              <SiteHeader />
+              <TickerBar />
+              <div className="flex min-h-0 flex-1">
+                <SideBar />
+                <div className="min-w-0 flex-1">
+                  <Outlet />
+                  <SiteFooter />
+                </div>
+              </div>
             </div>
-            <SiteFooter />
-          </div>
+          </SiteNavProvider>
         </AuthProvider>
         <Scripts />
       </body>
