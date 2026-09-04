@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 const X_URL = "https://x.com/aspnewschannel?s=11";
 const TELEGRAM_URL = "https://t.me/AlphaSignalsPro";
@@ -27,33 +28,26 @@ function TelegramIcon() {
 }
 
 export function SideBar() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <aside className="group fixed left-0 top-1/2 z-50 -translate-y-1/2">
-      <div className="flex w-10 flex-col overflow-hidden rounded-r-md border border-border bg-surface/95 shadow-xl backdrop-blur transition-all duration-200 group-hover:w-48">
-        <div className="flex h-10 shrink-0 items-center justify-center border-b border-border text-primary">
+    <aside className="fixed left-0 top-1/2 z-50 -translate-y-1/2">
+      <div className={`flex flex-col overflow-hidden rounded-r-md border border-border bg-surface/95 shadow-xl backdrop-blur transition-all duration-200 ${open ? "w-48" : "w-10"}`}>
+        <button type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? "Close site navigation" : "Open site navigation"} aria-expanded={open} className="flex h-10 shrink-0 items-center justify-center border-b border-border text-primary hover:bg-elevated">
           <span className="font-mono text-xs font-semibold tracking-widest">ASP</span>
-        </div>
+        </button>
         <nav aria-label="Site sections" className="py-1">
           {sections.map((item) => (
-            <Link
-              key={item.label}
-              to="/"
-              search={item.q ? { q: item.q } : {}}
-              className="flex h-10 items-center whitespace-nowrap px-3 text-sm text-muted transition-colors hover:bg-elevated hover:text-foreground"
-            >
+            <Link key={item.label} to="/" search={item.q ? { q: item.q } : {}} onClick={() => setOpen(false)} className={`flex h-10 items-center whitespace-nowrap px-3 text-sm text-muted transition-colors hover:bg-elevated hover:text-foreground ${open ? "" : "pointer-events-none"}`} tabIndex={open ? 0 : -1}>
               <span className="w-4 shrink-0 text-center text-[10px] text-subtle">•</span>
-              <span className="ml-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">{item.label}</span>
+              <span className="ml-2">{item.label}</span>
             </Link>
           ))}
         </nav>
         <div className="border-t border-border py-2">
           <div className="flex items-center justify-center gap-3 px-2">
-            <a href={X_URL} target="_blank" rel="noreferrer" aria-label="ASP News on X" className="flex size-8 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-foreground">
-              <XIcon />
-            </a>
-            <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" aria-label="ASP News on Telegram" className="flex size-8 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-foreground">
-              <TelegramIcon />
-            </a>
+            <a href={X_URL} target="_blank" rel="noreferrer" aria-label="ASP News on X" className="flex size-8 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-foreground"><XIcon /></a>
+            <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" aria-label="ASP News on Telegram" className="flex size-8 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-foreground"><TelegramIcon /></a>
           </div>
         </div>
       </div>
