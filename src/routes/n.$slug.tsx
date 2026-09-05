@@ -16,7 +16,7 @@ export const Route = createFileRoute("/n/$slug")({
     const payload = (await response.json()) as { post?: TelegramPost };
     return { post: payload.post ?? null };
   },
-  head: () => ({ meta: [{ title: "Alpha Signals Pro" }] }),
+  head: () => ({ meta: [{ title: "ASP News" }] }),
   component: ArticlePage,
 });
 
@@ -70,7 +70,7 @@ function ArticlePage() {
           </div>
         ) : null}
 
-        <div className="mt-8 space-y-5 text-[17px] leading-7 text-foreground/92">
+        <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground/92">
           {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
 

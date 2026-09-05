@@ -38,12 +38,14 @@ export function SiteHeader() {
         <HeaderMenuButton />
 
         <Link to="/" className="flex min-h-11 min-w-0 items-center gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-primary font-display text-sm font-semibold text-primary-foreground">
-            A
-          </span>
+          <img
+            src="/asplogo.jpg"
+            alt="ASP News"
+            className="size-9 shrink-0 rounded-full object-cover"
+          />
           <span className="leading-tight">
             <span className="block font-display text-[17px] font-medium tracking-tight">
-              Alpha Signals Pro
+              ASP News
             </span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted sm:block">
               Market intelligence

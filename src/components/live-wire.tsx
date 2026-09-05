@@ -88,7 +88,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
             </h2>
 
             {dek ? (
-              <p className="mt-3 line-clamp-5 text-base leading-relaxed text-muted">{dek}</p>
+              <p className="mt-3 line-clamp-5 font-news text-base leading-[1.6] text-muted">{dek}</p>
             ) : null}
 
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">

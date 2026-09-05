@@ -35,7 +35,7 @@ export function ArticleCard({ article, featured = false }: { article: ArticleWit
         {article.headline}
       </h2>
       
-      <p className="mt-2 text-sm leading-relaxed text-muted line-clamp-3">
+      <p className="mt-2 font-news text-[15px] leading-[1.6] text-muted line-clamp-3">
         {article.dek}
       </p>
       

@@ -21,6 +21,7 @@
   --font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif;
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-news: "Source Serif 4", Georgia, "Iowan Old Style", "Times New Roman", serif;
 
   --radius-xs: 4px;
   --radius-sm: 8px;
