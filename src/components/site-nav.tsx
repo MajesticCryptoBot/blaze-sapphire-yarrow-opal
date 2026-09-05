@@ -24,15 +24,15 @@ import { SocialIconRow } from "@/lib/socials";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
-  { label: "Home", to: "/", search: {}, hash: undefined as string | undefined, icon: Home, match: "home" },
-  { label: "News", to: "/", search: {}, hash: "feed", icon: Newspaper, match: "news" },
-  { label: "Bitcoin", to: "/", search: { q: "bitcoin" }, hash: "feed", icon: Bitcoin, match: "bitcoin" },
-  { label: "Regulation", to: "/", search: { q: "regulation" }, hash: "feed", icon: Scale, match: "regulation" },
-  { label: "Altcoins", to: "/", search: { q: "altcoin" }, hash: "feed", icon: Coins, match: "altcoin" },
-  { label: "US", to: "/", search: { q: "us" }, hash: "feed", icon: Landmark, match: "us" },
-  { label: "China", to: "/", search: { q: "china" }, hash: "feed", icon: Building2, match: "china" },
-  { label: "Fun Facts", to: "/", search: { q: "fun facts" }, hash: "feed", icon: Lightbulb, match: "fun facts" },
-] as const;
+  { label: "Home", to: "/" as const, icon: Home },
+  { label: "News", to: "/$slug" as const, params: { slug: "news" }, icon: Newspaper },
+  { label: "Bitcoin", to: "/$slug" as const, params: { slug: "bitcoin" }, icon: Bitcoin },
+  { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
+  { label: "Altcoins", to: "/$slug" as const, params: { slug: "altcoins" }, icon: Coins },
+  { label: "US", to: "/$slug" as const, params: { slug: "us" }, icon: Landmark },
+  { label: "China", to: "/$slug" as const, params: { slug: "china" }, icon: Building2 },
+  { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
+];
 
 type NavContextValue = {
   open: boolean;
@@ -71,36 +71,37 @@ export function HeaderMenuButton() {
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const search = useRouterState({ select: (state) => state.location.search as { q?: string } });
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const hash = useRouterState({ select: (state) => state.location.hash.replace(/^#/, "") });
-  const query = (search.q ?? "").trim().toLowerCase();
 
   return (
     <nav aria-label="Desk sections" className="flex flex-col gap-1 px-3 py-4">
       {SECTIONS.map((item) => {
         const Icon = item.icon;
-        const active =
-          pathname === "/" &&
-          (item.match === "home"
-            ? !query && hash !== "feed"
-            : item.match === "news"
-              ? !query && hash === "feed"
-              : query === item.match);
+        const href = "params" in item && item.params ? `/${item.params.slug}` : "/";
+        const active = pathname === href;
+        const className = cn(
+          "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          active
+            ? "bg-elevated text-foreground"
+            : "text-muted hover:bg-elevated hover:text-foreground",
+        );
+
+        if (item.to === "/") {
+          return (
+            <Link key={item.label} to="/" search={{ q: "" }} onClick={onNavigate} className={className}>
+              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        }
 
         return (
           <Link
             key={item.label}
-            to={item.to}
-            search={item.search}
-            hash={item.hash}
+            to="/$slug"
+            params={item.params}
             onClick={onNavigate}
-            className={cn(
-              "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              active
-                ? "bg-elevated text-foreground"
-                : "text-muted hover:bg-elevated hover:text-foreground",
-            )}
+            className={className}
           >
             <Icon className="size-4 shrink-0" strokeWidth={1.7} />
             <span>{item.label}</span>
