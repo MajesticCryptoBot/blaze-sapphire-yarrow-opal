@@ -3,12 +3,14 @@ import {
   Bitcoin,
   Building2,
   Coins,
+  Globe,
   Home,
   Landmark,
   Lightbulb,
   Menu,
   Newspaper,
   Scale,
+  TrendingUp,
   X,
 } from "lucide-react";
 import {
@@ -26,10 +28,12 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { label: "Home", to: "/" as const, icon: Home },
   { label: "News", to: "/$slug" as const, params: { slug: "news" }, icon: Newspaper },
+  { label: "Market", to: "/markets" as const, icon: TrendingUp },
   { label: "Bitcoin", to: "/$slug" as const, params: { slug: "bitcoin" }, icon: Bitcoin },
   { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
   { label: "Altcoins", to: "/$slug" as const, params: { slug: "altcoins" }, icon: Coins },
   { label: "US", to: "/$slug" as const, params: { slug: "us" }, icon: Landmark },
+  { label: "International", to: "/$slug" as const, params: { slug: "international" }, icon: Globe },
   { label: "China", to: "/$slug" as const, params: { slug: "china" }, icon: Building2 },
   { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
 ];
@@ -77,7 +81,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     <nav aria-label="Desk sections" className="flex flex-col gap-1 px-3 py-4">
       {SECTIONS.map((item) => {
         const Icon = item.icon;
-        const href = "params" in item && item.params ? `/${item.params.slug}` : "/";
+        const href = "params" in item && item.params ? `/${item.params.slug}` : item.to;
         const active = pathname === href;
         const className = cn(
           "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -89,6 +93,15 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         if (item.to === "/") {
           return (
             <Link key={item.label} to="/" search={{ q: "" }} onClick={onNavigate} className={className}>
+              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        }
+
+        if (item.to === "/markets") {
+          return (
+            <Link key={item.label} to="/markets" onClick={onNavigate} className={className}>
               <Icon className="size-4 shrink-0" strokeWidth={1.7} />
               <span>{item.label}</span>
             </Link>

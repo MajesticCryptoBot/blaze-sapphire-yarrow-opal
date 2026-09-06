@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -124,7 +125,15 @@ function Markets() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+      <Link
+        to="/"
+        search={{ q: "" }}
+        className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </Link>
+      <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
         Spot tape
       </p>
       <h1 className="mt-3 font-display text-4xl font-medium">Markets</h1>

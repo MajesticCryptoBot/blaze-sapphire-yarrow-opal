@@ -4,7 +4,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { TickerBar } from "@/components/ticker-bar";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "ASP News";
@@ -52,6 +52,7 @@ export const Route = createRootRoute({
                 <div className="min-w-0 flex-1">
                   <Outlet />
                   <SiteFooter />
+                  <ScrollToTop />
                 </div>
               </div>
             </div>

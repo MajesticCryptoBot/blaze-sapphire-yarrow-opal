@@ -110,6 +110,14 @@ export const DESK_SECTIONS: DeskSection[] = [
     ],
   },
   {
+    slug: "international",
+    label: "International",
+    kicker: "World desk",
+    headline: "International",
+    dek: "Non-U.S. briefs from the tape — Europe, Asia, and the rest of the world.",
+    wireTerms: [],
+  },
+  {
     slug: "china",
     label: "China",
     kicker: "China desk",
@@ -147,9 +155,18 @@ function termPattern(term: string) {
   return new RegExp(escaped, "i");
 }
 
+function matchesTerms(text: string, terms: string[]) {
+  return terms.some((term) => termPattern(term).test(text));
+}
+
 export function matchesDesk(text: string, section: DeskSection) {
-  if (section.slug === "news" || section.wireTerms.length === 0) return true;
-  return section.wireTerms.some((term) => termPattern(term).test(text));
+  if (section.slug === "news") return true;
+  if (section.slug === "international") {
+    const us = DESK_SECTIONS.find((item) => item.slug === "us");
+    return us ? !matchesTerms(text, us.wireTerms) : true;
+  }
+  if (section.wireTerms.length === 0) return true;
+  return matchesTerms(text, section.wireTerms);
 }
 
 export function getDeskSection(slug: string): DeskSection | undefined {

@@ -15,7 +15,9 @@ type ArticleWithTelegram = Article & {
 
 export function ArticleCard({ article, featured = false }: { article: ArticleWithTelegram; featured?: boolean }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
-  const hasMedia = Boolean(article._telegramId && (article._hasVideo || article._hasPhoto));
+  const hasMedia = Boolean(
+    featured && article._telegramId && (article._hasVideo || article._hasPhoto),
+  );
 
   return (
     <Link
