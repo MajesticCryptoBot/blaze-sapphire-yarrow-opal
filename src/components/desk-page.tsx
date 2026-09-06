@@ -55,7 +55,7 @@ export function DeskPage({ section }: { section: DeskSection }) {
   }, [section.slug]);
 
   const items = useMemo(
-    () => (posts ?? []).filter((post) => matchesDesk(post.text, section)).map(toArticle),
+    () => (posts ?? []).filter((post) => matchesDesk(post.text, section)).map(toArticle).slice(0, 20),
     [posts, section],
   );
   const [lead, ...rest] = items;
