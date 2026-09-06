@@ -5,6 +5,7 @@ import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { TickerBar } from "@/components/ticker-bar";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "ASP News";
