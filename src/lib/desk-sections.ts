@@ -1,29 +1,9 @@
-export type DeskStory = {
-  title: string;
-  dek: string;
-  href?: string;
-};
-
-export type DeskPhoto = {
-  src: string;
-  caption: string;
-};
-
-export type DeskVideo = {
-  src: string;
-  caption: string;
-};
-
 export type DeskSection = {
   slug: string;
   label: string;
   kicker: string;
   headline: string;
   dek: string;
-  paragraphs: string[];
-  stories: DeskStory[];
-  photos: DeskPhoto[];
-  videos: DeskVideo[];
   wireTerms: string[];
 };
 
@@ -32,12 +12,8 @@ export const DESK_SECTIONS: DeskSection[] = [
     slug: "news",
     label: "News",
     kicker: "Newsroom",
-    headline: "The news desk",
-    dek: "A dedicated room for original briefs, photography, and video packages beyond the live tape.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
+    headline: "News",
+    dek: "The full ASP tape — every brief, photo, and video as it hits the desk.",
     wireTerms: [],
   },
   {
@@ -45,24 +21,33 @@ export const DESK_SECTIONS: DeskSection[] = [
     label: "Bitcoin",
     kicker: "Bitcoin desk",
     headline: "Bitcoin",
-    dek: "Coverage of Bitcoin, mining, ETF flows, treasury buyers, and the monetary debate around BTC.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["bitcoin", "btc"],
+    dek: "BTC, ETF flows, miners, treasuries, and the monetary debate around Bitcoin.",
+    wireTerms: ["bitcoin", "btc", "satoshi", "ordinals", "sats"],
   },
   {
     slug: "regulation",
     label: "Regulation",
     kicker: "Policy desk",
     headline: "Regulation",
-    dek: "SEC, CFTC, Congress, and global market-structure rules as they land on digital assets.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["regulation", "sec", "cftc", "etf"],
+    dek: "SEC, CFTC, ETFs, lawsuits, and market-structure rules.",
+    wireTerms: [
+      "regulation",
+      "regulator",
+      "sec",
+      "cftc",
+      "esma",
+      "mica",
+      "lawsuit",
+      "subpoena",
+      "etf",
+      "compliance",
+      "ban",
+      "banned",
+      "policy",
+      "congress",
+      "senate",
+      "bill",
+    ],
   },
   {
     slug: "altcoins",
@@ -70,11 +55,29 @@ export const DESK_SECTIONS: DeskSection[] = [
     kicker: "Altcoin desk",
     headline: "Altcoins",
     dek: "Ethereum, Solana, XRP, and the rest of the tape outside Bitcoin.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["ethereum", "solana", "xrp", "altcoin", "eth", "sol"],
+    wireTerms: [
+      "ethereum",
+      "ether",
+      "eth",
+      "solana",
+      "sol",
+      "xrp",
+      "ripple",
+      "dogecoin",
+      "doge",
+      "cardano",
+      "ada",
+      "avalanche",
+      "avax",
+      "chainlink",
+      "altcoin",
+      "altcoins",
+      "bnb",
+      "polygon",
+      "ton",
+      "sui",
+      "hype",
+    ],
   },
   {
     slug: "us",
@@ -82,23 +85,51 @@ export const DESK_SECTIONS: DeskSection[] = [
     kicker: "United States",
     headline: "United States",
     dek: "The Fed, Treasury, Washington, and U.S. macro that moves risk assets.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["fed", "federal reserve", "warsh", "treasury", "white house", "united states"],
+    wireTerms: [
+      "united states",
+      "u.s.",
+      "u.s",
+      "usa",
+      "washington",
+      "white house",
+      "federal reserve",
+      "the fed",
+      "fomc",
+      "powell",
+      "warsh",
+      "treasury",
+      "dollar",
+      "dxy",
+      "cpi",
+      "nfp",
+      "nonfarm",
+      "wall street",
+      "nasdaq",
+      "s&p",
+      "nyse",
+    ],
   },
   {
     slug: "china",
     label: "China",
     kicker: "China desk",
     headline: "China",
-    dek: "Beijing policy, markets, and the China-crypto corridor.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["china", "beijing", "pboc", "yuan"],
+    dek: "Beijing policy, Chinese markets, and the China-crypto corridor.",
+    wireTerms: [
+      "china",
+      "chinese",
+      "beijing",
+      "shanghai",
+      "shenzhen",
+      "hong kong",
+      "pboc",
+      "yuan",
+      "renminbi",
+      "hang seng",
+      "alibaba",
+      "tencent",
+      "bytedance",
+    ],
   },
   {
     slug: "fun-facts",
@@ -106,13 +137,20 @@ export const DESK_SECTIONS: DeskSection[] = [
     kicker: "Notebook",
     headline: "Fun facts",
     dek: "Short notes, curiosities, and asides from the tape.",
-    paragraphs: [],
-    stories: [],
-    photos: [],
-    videos: [],
-    wireTerms: ["fun", "fact", "curious"],
+    wireTerms: ["fun fact", "fun facts", "did you know", "trivia", "curious", "odd", "notebook", "aside"],
   },
 ];
+
+function termPattern(term: string) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  if (term.length <= 4) return new RegExp(`\\b${escaped}\\b`, "i");
+  return new RegExp(escaped, "i");
+}
+
+export function matchesDesk(text: string, section: DeskSection) {
+  if (section.slug === "news" || section.wireTerms.length === 0) return true;
+  return section.wireTerms.some((term) => termPattern(term).test(text));
+}
 
 export function getDeskSection(slug: string): DeskSection | undefined {
   return DESK_SECTIONS.find((section) => section.slug === slug);

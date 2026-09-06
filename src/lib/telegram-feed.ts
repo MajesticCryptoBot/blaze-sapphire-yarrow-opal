@@ -82,7 +82,7 @@ export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
       limit $2`,
-    [CHANNEL_KEY, Math.min(Math.max(limit, 1), 10)],
+    [CHANNEL_KEY, Math.min(Math.max(limit, 1), 80)],
   );
   return rows.map(mapRow);
 }

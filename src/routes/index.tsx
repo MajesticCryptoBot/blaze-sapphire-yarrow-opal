@@ -15,7 +15,14 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-function toArticle(post: TelegramPost): Article & { _telegramId: number; _hasPhoto: boolean; _messageUrl: string | null } {
+function toArticle(post: TelegramPost): Article & {
+  _telegramId: number;
+  _hasPhoto: boolean;
+  _hasPhoto2: boolean;
+  _hasVideo: boolean;
+  _videoMimeType: string | null;
+  _messageUrl: string | null;
+} {
   const { headline, dek } = splitHeadline(post.text);
   return {
     slug: `telegram-${post.id}`,
@@ -30,6 +37,9 @@ function toArticle(post: TelegramPost): Article & { _telegramId: number; _hasPho
     keyFacts: [],
     _telegramId: post.id,
     _hasPhoto: post.hasPhoto,
+    _hasPhoto2: post.hasPhoto2,
+    _hasVideo: post.hasVideo,
+    _videoMimeType: post.videoMimeType,
     _messageUrl: post.messageUrl,
   };
 }
