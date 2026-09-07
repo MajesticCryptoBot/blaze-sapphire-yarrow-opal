@@ -1,7 +1,9 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Sparkline } from "@/components/sparkline";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
+import { useMarketCharts } from "@/components/use-market-charts";
 import { formatTime } from "@/lib/news";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,7 @@ function formatPrice(value: number) {
 export function LiveWire({ latest }: { latest?: TelegramPost }) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketError, setMarketError] = useState(false);
+  const charts = useMarketCharts();
 
   useEffect(() => {
     let active = true;
@@ -123,10 +126,11 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <div className="divide-y divide-border">
             {markets.map((market) => (
               <div key={market.symbol} className="flex items-center justify-between gap-3 py-4">
-                <div>
+                <div className="min-w-0">
                   <div className="font-mono text-sm font-semibold">{market.symbol}</div>
                   <div className="text-xs text-muted">{market.name}</div>
                 </div>
+                <Sparkline values={charts[market.symbol] ?? []} width={88} height={32} />
                 <div className="text-right">
                   <div className="font-mono text-sm tabular-nums">{formatPrice(market.price)}</div>
                   <div

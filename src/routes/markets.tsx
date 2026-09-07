@@ -1,6 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Sparkline } from "@/components/sparkline";
+import { LiveChart } from "@/components/live-chart";
+import { useMarketCharts } from "@/components/use-market-charts";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/markets")({ component: Markets });
@@ -90,6 +93,7 @@ function Markets() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const charts = useMarketCharts();
 
   useEffect(() => {
     let active = true;
@@ -142,14 +146,17 @@ function Markets() {
         bStocks for SpaceX, Tesla, Apple, Strategy, and NVIDIA.
       </p>
 
+      <LiveChart className="mt-8" />
+
       <div className="mt-8 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[620px] text-left">
+        <table className="w-full min-w-[720px] text-left">
           <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
             <tr>
               <th className="px-4 py-3 font-medium">Symbol</th>
               <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Last</th>
               <th className="px-4 py-3 font-medium">24h</th>
+              <th className="px-4 py-3 font-medium">Last</th>
+              <th className="px-4 py-3 font-medium">Change</th>
               <th className="px-4 py-3 font-medium">Updated</th>
             </tr>
           </thead>
@@ -160,6 +167,9 @@ function Markets() {
                 <tr key={market.symbol} className="border-t border-border">
                   <td className="px-4 py-4 font-mono text-sm font-semibold">{market.symbol}</td>
                   <td className="px-4 py-4 text-sm text-muted">{market.name}</td>
+                  <td className="px-4 py-4">
+                    <Sparkline values={charts[market.symbol] ?? []} width={96} height={32} />
+                  </td>
                   <td className="px-4 py-4 font-mono text-sm tabular-nums">${formatPrice(market.price)}</td>
                   <td className={cn("px-4 py-4 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
                     {up ? "+" : ""}{market.change24h.toFixed(2)}%
@@ -173,7 +183,7 @@ function Markets() {
             {!loaded && markets.length === 0
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-t border-border">
-                    <td className="px-4 py-4 text-sm text-subtle" colSpan={5}>
+                    <td className="px-4 py-4 text-sm text-subtle" colSpan={6}>
                       Loading the tape…
                     </td>
                   </tr>

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
+import { LiveChart } from "@/components/live-chart";
 import { LiveWire } from "@/components/live-wire";
 import { Input } from "@/components/ui/input";
 import { CATEGORIES, type Article } from "@/lib/news";
@@ -103,6 +104,7 @@ function Home() {
       </section>
 
       <LiveWire latest={posts[0]} />
+      <LiveChart className="mt-5" />
 
       <div id="feed" className="mt-10 flex scroll-mt-24 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Sparkline } from "@/components/sparkline";
+import { useMarketCharts } from "@/components/use-market-charts";
 import { cn } from "@/lib/utils";
 
 type LiveMarket = {
@@ -76,6 +78,7 @@ async function fetchBinanceStocks(): Promise<LiveMarket[]> {
 
 export function TickerBar() {
   const [liveMarkets, setLiveMarkets] = useState<LiveMarket[]>([]);
+  const charts = useMarketCharts();
 
   useEffect(() => {
     let active = true;
@@ -136,6 +139,7 @@ export function TickerBar() {
                 <span className="font-mono text-[12px] tabular-nums text-foreground">
                   {t.price == null ? "—" : `$${formatPrice(t.price)}`}
                 </span>
+                <Sparkline values={charts[t.symbol] ?? []} width={64} height={22} />
                 {t.change != null ? (
                   <span
                     className={cn(

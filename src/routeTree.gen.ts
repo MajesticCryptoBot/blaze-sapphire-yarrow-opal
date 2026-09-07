@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as ApiMarketChartsRouteImport } from './routes/api/market-charts'
 import { Route as ApiMarketPricesRouteImport } from './routes/api/market-prices'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiNewsIngestRouteImport } from './routes/api/news-ingest'
@@ -34,6 +35,11 @@ const SlugRoute = SlugRouteImport.update({
 const MarketsRoute = MarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMarketChartsRoute = ApiMarketChartsRouteImport.update({
+  id: '/api/market-charts',
+  path: '/api/market-charts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMarketPricesRoute = ApiMarketPricesRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/markets': typeof MarketsRoute
+  '/api/market-charts': typeof ApiMarketChartsRoute
   '/api/market-prices': typeof ApiMarketPricesRoute
   '/api/news': typeof ApiNewsRouteWithChildren
   '/api/news-ingest': typeof ApiNewsIngestRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/markets': typeof MarketsRoute
+  '/api/market-charts': typeof ApiMarketChartsRoute
   '/api/market-prices': typeof ApiMarketPricesRoute
   '/api/news': typeof ApiNewsRouteWithChildren
   '/api/news-ingest': typeof ApiNewsIngestRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/markets': typeof MarketsRoute
+  '/api/market-charts': typeof ApiMarketChartsRoute
   '/api/market-prices': typeof ApiMarketPricesRoute
   '/api/news': typeof ApiNewsRouteWithChildren
   '/api/news-ingest': typeof ApiNewsIngestRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/markets'
+    | '/api/market-charts'
     | '/api/market-prices'
     | '/api/news'
     | '/api/news-ingest'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/markets'
+    | '/api/market-charts'
     | '/api/market-prices'
     | '/api/news'
     | '/api/news-ingest'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/markets'
+    | '/api/market-charts'
     | '/api/market-prices'
     | '/api/news'
     | '/api/news-ingest'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SlugRoute: typeof SlugRoute
   MarketsRoute: typeof MarketsRoute
+  ApiMarketChartsRoute: typeof ApiMarketChartsRoute
   ApiMarketPricesRoute: typeof ApiMarketPricesRoute
   ApiNewsRoute: typeof ApiNewsRouteWithChildren
   ApiNewsIngestRoute: typeof ApiNewsIngestRoute
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/market-charts': {
+      id: '/api/market-charts'
+      path: '/api/market-charts'
+      fullPath: '/api/market-charts'
+      preLoaderRoute: typeof ApiMarketChartsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/market-prices': {
@@ -269,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRoute,
   MarketsRoute: MarketsRoute,
+  ApiMarketChartsRoute: ApiMarketChartsRoute,
   ApiMarketPricesRoute: ApiMarketPricesRoute,
   ApiNewsRoute: ApiNewsRouteWithChildren,
   ApiNewsIngestRoute: ApiNewsIngestRoute,
