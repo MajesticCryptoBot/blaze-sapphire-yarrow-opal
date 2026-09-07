@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { HeaderMenuButton } from "@/components/site-nav";
+import { ThemeToggle } from "@/components/theme";
 import { TELEGRAM_URL } from "@/lib/telegram-feed";
 
 export function SiteHeader() {
@@ -82,6 +83,8 @@ export function SiteHeader() {
             />
           </label>
         </form>
+
+        <ThemeToggle />
 
         <div className="hidden text-right xl:block">
           <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">UTC</div>

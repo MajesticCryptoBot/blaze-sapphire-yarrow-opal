@@ -5,6 +5,7 @@ import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { ThemeProvider } from "@/components/theme";
 import { TickerBar } from "@/components/ticker-bar";
 import appCss from "../styles.css?url";
 
@@ -37,27 +38,34 @@ export const Route = createRootRoute({
     ],
   }),
   component: () => (
-    <html lang="en" className="antialiased" suppressHydrationWarning>
+    <html lang="en" className="antialiased" data-theme="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className="bg-bg text-foreground">
         <PreviewHostBridge />
         <AuthProvider>
-          <SiteNavProvider>
-            <div className="flex min-h-dvh flex-col">
-              <SiteHeader />
-              <TickerBar />
-              <div className="flex min-h-0 flex-1">
-                <SideBar />
-                <div className="min-w-0 flex-1">
-                  <Outlet />
-                  <SiteFooter />
-                  <ScrollToTop />
+          <ThemeProvider>
+            <SiteNavProvider>
+              <div className="flex min-h-dvh flex-col">
+                <SiteHeader />
+                <TickerBar />
+                <div className="flex min-h-0 flex-1">
+                  <SideBar />
+                  <div className="min-w-0 flex-1">
+                    <Outlet />
+                    <SiteFooter />
+                    <ScrollToTop />
+                  </div>
                 </div>
               </div>
-            </div>
-          </SiteNavProvider>
+            </SiteNavProvider>
+          </ThemeProvider>
         </AuthProvider>
         <Scripts />
       </body>
