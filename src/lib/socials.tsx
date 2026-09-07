@@ -44,7 +44,7 @@ export function SocialIconRow({ className = "" }: { className?: string }) {
             target="_blank"
             rel="noreferrer"
             aria-label={`ASP News on ${item.label}`}
-            className="flex size-11 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex size-11 items-center justify-center rounded-md text-muted transition-all duration-[var(--motion-quick)] hover:bg-[#38bdf8]/10 hover:text-[#38bdf8] hover:shadow-[0_0_14px_rgba(56,189,248,0.22)] hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38bdf8]"
           >
             <Icon />
           </a>
