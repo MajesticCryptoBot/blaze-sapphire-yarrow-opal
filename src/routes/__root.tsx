@@ -23,6 +23,7 @@ export const Route = createRootRoute({
           "ASP News — live market intelligence for crypto, macro, and AI.",
       },
       { name: "theme-color", content: "#09090b" },
+      { name: "color-scheme", content: "dark light" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

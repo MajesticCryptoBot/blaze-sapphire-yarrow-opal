@@ -89,7 +89,7 @@ function ArticlePage() {
           </div>
         ) : null}
 
-        <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground/92">
+        <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground">
           {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
 

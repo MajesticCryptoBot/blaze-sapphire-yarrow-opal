@@ -2,8 +2,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { HeaderMenuButton } from "@/components/site-nav";
+import { DeskStrip } from "@/components/desk-strip";
 import { ThemeToggle } from "@/components/theme";
-import { TELEGRAM_URL } from "@/lib/telegram-feed";
 
 export function SiteHeader() {
   const navigate = useNavigate();
@@ -34,18 +34,18 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg/92 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-border bg-bg">
       <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5 md:pl-14">
         <HeaderMenuButton />
 
-        <Link to="/" className="flex min-h-11 min-w-0 items-center gap-3">
+        <Link to="/" search={{ q: "" }} className="flex min-h-11 min-w-0 items-center gap-3">
           <img
             src="/asplogo.jpg"
             alt="ASP News"
             className="size-9 shrink-0 rounded-full object-cover"
           />
           <span className="leading-tight">
-            <span className="block font-display text-[17px] font-medium tracking-tight">
+            <span className="block font-display text-[17px] font-medium tracking-tight text-foreground">
               ASP News
             </span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted sm:block">
@@ -53,23 +53,6 @@ export function SiteHeader() {
             </span>
           </span>
         </Link>
-
-        <nav className="hidden items-center lg:flex">
-          <Link to="/" className="flex h-11 items-center px-3 text-sm text-muted hover:text-foreground">
-            Wire
-          </Link>
-          <Link to="/markets" className="flex h-11 items-center px-3 text-sm text-muted hover:text-foreground">
-            Markets
-          </Link>
-          <a
-            href={TELEGRAM_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-11 items-center px-3 text-sm text-muted hover:text-foreground"
-          >
-            Telegram
-          </a>
-        </nav>
 
         <form onSubmit={submitSearch} className="ml-auto w-full max-w-32 sm:max-w-52 md:max-w-64 lg:max-w-72">
           <label className="relative block">
@@ -91,6 +74,7 @@ export function SiteHeader() {
           <div className="font-mono text-[11px] tabular-nums text-muted">{stamp}</div>
         </div>
       </div>
+      <DeskStrip />
     </header>
   );
 }
