@@ -109,7 +109,10 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
         )}
       </div>
 
-      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
+      <a
+        href="/markets"
+        className="block rounded-lg border border-border bg-surface p-5 transition-colors hover:border-primary/40 sm:p-6"
+      >
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div>
             <h2 className="font-display text-2xl">Spot tape</h2>
@@ -147,7 +150,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
             ))}
           </div>
         )}
-      </div>
+      </a>
     </section>
   );
 }
