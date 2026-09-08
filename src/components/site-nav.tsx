@@ -2,15 +2,20 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Bitcoin,
   Building2,
+  Castle,
+  Clapperboard,
   Coins,
   Globe,
+  Hexagon,
   Home,
   Landmark,
   Lightbulb,
   Menu,
   Newspaper,
   Scale,
+  Sparkles,
   TrendingUp,
+  Waves,
   X,
 } from "lucide-react";
 import {
@@ -30,12 +35,17 @@ const SECTIONS = [
   { label: "News", to: "/$slug" as const, params: { slug: "news" }, icon: Newspaper },
   { label: "Market", to: "/markets" as const, icon: TrendingUp },
   { label: "Bitcoin", to: "/$slug" as const, params: { slug: "bitcoin" }, icon: Bitcoin },
-  { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
+  { label: "Ethereum", to: "/$slug" as const, params: { slug: "ethereum" }, icon: Hexagon },
+  { label: "Solana", to: "/$slug" as const, params: { slug: "solana" }, icon: Sparkles },
+  { label: "XRP", to: "/$slug" as const, params: { slug: "xrp" }, icon: Waves },
   { label: "Altcoins", to: "/$slug" as const, params: { slug: "altcoins" }, icon: Coins },
+  { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
   { label: "US", to: "/$slug" as const, params: { slug: "us" }, icon: Landmark },
   { label: "International", to: "/$slug" as const, params: { slug: "international" }, icon: Globe },
   { label: "China", to: "/$slug" as const, params: { slug: "china" }, icon: Building2 },
+  { label: "Russia", to: "/$slug" as const, params: { slug: "russia" }, icon: Castle },
   { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
+  { label: "Videos", to: "/$slug" as const, params: { slug: "videos" }, icon: Clapperboard },
 ];
 
 type NavContextValue = {

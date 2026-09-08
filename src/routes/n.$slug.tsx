@@ -3,10 +3,14 @@ import { ArrowLeft } from "lucide-react";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
+import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
 import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/n/$slug")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: typeof search.from === "string" ? search.from : "",
+  }),
   loader: async ({ params }) => {
     const id = parsePublicId(params.slug);
     if (id === null) return { post: null as TelegramPost | null };
@@ -20,16 +24,34 @@ export const Route = createFileRoute("/n/$slug")({
   component: ArticlePage,
 });
 
+function StoryBack({ from }: { from: string }) {
+  const className = "inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground";
+
+  if (from && isDeskSlug(from)) {
+    return (
+      <Link to="/$slug" params={{ slug: from }} className={className}>
+        <ArrowLeft className="size-4" />
+        Back
+      </Link>
+    );
+  }
+
+  return (
+    <Link to="/" search={{ q: "" }} className={className}>
+      <ArrowLeft className="size-4" />
+      Back
+    </Link>
+  );
+}
+
 function ArticlePage() {
   const { post } = Route.useLoaderData();
+  const { from } = Route.useSearch();
 
   if (!post) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <Link to="/" className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground">
-          <ArrowLeft className="size-4" />
-          Back to the wire
-        </Link>
+        <StoryBack from={from} />
         <p className="mt-8 text-sm text-muted">This story is no longer available.</p>
       </main>
     );
@@ -41,10 +63,7 @@ function ArticlePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <Link to="/" className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="size-4" />
-        Back to the wire
-      </Link>
+      <StoryBack from={from} />
 
       <article className="mt-6 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">

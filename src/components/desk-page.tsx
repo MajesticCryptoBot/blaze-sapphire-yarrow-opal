@@ -55,7 +55,7 @@ export function DeskPage({ section }: { section: DeskSection }) {
   }, [section.slug]);
 
   const items = useMemo(
-    () => (posts ?? []).filter((post) => matchesDesk(post.text, section)).map(toArticle).slice(0, 20),
+    () => (posts ?? []).filter((post) => matchesDesk(post, section)).map(toArticle).slice(0, 20),
     [posts, section],
   );
   const [lead, ...rest] = items;
@@ -86,12 +86,12 @@ export function DeskPage({ section }: { section: DeskSection }) {
       ) : (
         <>
           <div className="mt-8">
-            <ArticleCard article={lead} featured />
+            <ArticleCard article={lead} featured from={section.slug} />
           </div>
           {rest.length > 0 ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((article) => (
-                <ArticleCard key={article.slug} article={article} />
+                <ArticleCard key={article.slug} article={article} from={section.slug} />
               ))}
             </div>
           ) : null}

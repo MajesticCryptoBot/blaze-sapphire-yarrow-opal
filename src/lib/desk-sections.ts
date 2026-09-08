@@ -25,6 +25,30 @@ export const DESK_SECTIONS: DeskSection[] = [
     wireTerms: ["bitcoin", "btc", "satoshi", "ordinals", "sats"],
   },
   {
+    slug: "ethereum",
+    label: "Ethereum",
+    kicker: "Ethereum desk",
+    headline: "Ethereum",
+    dek: "Ether, the L2 stack, staking, and Ethereum market structure.",
+    wireTerms: ["ethereum", "ether", "eth"],
+  },
+  {
+    slug: "solana",
+    label: "Solana",
+    kicker: "Solana desk",
+    headline: "Solana",
+    dek: "SOL, Solana apps, validators, and network events.",
+    wireTerms: ["solana", "sol"],
+  },
+  {
+    slug: "xrp",
+    label: "XRP",
+    kicker: "XRP desk",
+    headline: "XRP",
+    dek: "Ripple, XRP liquidity, and the legal tape around the token.",
+    wireTerms: ["xrp", "ripple"],
+  },
+  {
     slug: "regulation",
     label: "Regulation",
     kicker: "Policy desk",
@@ -140,12 +164,28 @@ export const DESK_SECTIONS: DeskSection[] = [
     ],
   },
   {
+    slug: "russia",
+    label: "Russia",
+    kicker: "Russia desk",
+    headline: "Russia",
+    dek: "Moscow, the ruble, and Russia-related market and crypto briefs.",
+    wireTerms: ["russia", "russian", "moscow", "kremlin", "putin", "ruble", "rouble", "cbr", "gazprom"],
+  },
+  {
     slug: "fun-facts",
     label: "Fun Facts",
     kicker: "Notebook",
     headline: "Fun facts",
     dek: "Short notes, curiosities, and asides from the tape.",
     wireTerms: ["fun fact", "fun facts", "did you know", "trivia", "curious", "odd", "notebook", "aside"],
+  },
+  {
+    slug: "videos",
+    label: "Videos",
+    kicker: "Video desk",
+    headline: "Videos",
+    dek: "Every brief on the tape that arrived with video.",
+    wireTerms: [],
   },
 ];
 
@@ -159,14 +199,15 @@ function matchesTerms(text: string, terms: string[]) {
   return terms.some((term) => termPattern(term).test(text));
 }
 
-export function matchesDesk(text: string, section: DeskSection) {
+export function matchesDesk(post: { text: string; hasVideo?: boolean }, section: DeskSection) {
   if (section.slug === "news") return true;
+  if (section.slug === "videos") return Boolean(post.hasVideo);
   if (section.slug === "international") {
     const us = DESK_SECTIONS.find((item) => item.slug === "us");
-    return us ? !matchesTerms(text, us.wireTerms) : true;
+    return us ? !matchesTerms(post.text, us.wireTerms) : true;
   }
   if (section.wireTerms.length === 0) return true;
-  return matchesTerms(text, section.wireTerms);
+  return matchesTerms(post.text, section.wireTerms);
 }
 
 export function getDeskSection(slug: string): DeskSection | undefined {

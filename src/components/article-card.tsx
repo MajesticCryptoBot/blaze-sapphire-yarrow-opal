@@ -13,7 +13,15 @@ type ArticleWithTelegram = Article & {
   _messageUrl?: string | null;
 };
 
-export function ArticleCard({ article, featured = false }: { article: ArticleWithTelegram; featured?: boolean }) {
+export function ArticleCard({
+  article,
+  featured = false,
+  from = "",
+}: {
+  article: ArticleWithTelegram;
+  featured?: boolean;
+  from?: string;
+}) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
   const hasMedia = Boolean(
     featured && article._telegramId && (article._hasVideo || article._hasPhoto),
@@ -23,6 +31,7 @@ export function ArticleCard({ article, featured = false }: { article: ArticleWit
     <Link
       to="/n/$slug"
       params={{ slug }}
+      search={{ from }}
       className="group block rounded-lg border border-border bg-surface p-5 transition-[border-color,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:border-ring/40 hover:shadow-lg"
     >
       <div className="flex items-center justify-between gap-3">
