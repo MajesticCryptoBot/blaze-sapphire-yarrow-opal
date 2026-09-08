@@ -57,9 +57,66 @@ export function tagFromText(text: string): NewsTag {
 
 export function categoryFromText(text: string): string {
   const lower = text.toLowerCase();
-  if (/\b(fed|fomc|cpi|nfp|treasury|macro|rate[- ]hike|warsh)\b/.test(lower)) return "Macro";
-  if (/\b(nvidia|openai|anthropic|ai|gpu|semiconductor)\b/.test(lower)) return "AI";
-  if (/\b(stock|equity|nasdaq|s&p|kospi|ipo)\b/.test(lower)) return "Markets";
+
+  const has = (pattern: RegExp) => pattern.test(lower);
+
+  if (
+    has(
+      /\b(war|warfare|invasion|ceasefire|airstrike|air strike|missile|drone strike|troops?|military|army|navy|pentagon|nato|sanctions?|hostilities|geopolitics|geopolitical|conflict)\b/,
+    ) ||
+    has(
+      /\b(iran|iranian|tehran|israel|israeli|gaza|hamas|hezbollah|lebanon|houthis?|yemen|syria|ukraine|ukrainian|kyiv|kiev|zelensky)\b/,
+    ) ||
+    has(/\b(putin|kremlin|moscow|russian army|taiwan|taipei|strait|north korea|pyongyang|kim jong)\b/)
+  ) {
+    return "Geopolitics";
+  }
+
+  if (
+    has(/\b(data[- ]cent(?:er|re)s?|hyperscale|gigawatt|\bgw\b|10\s*gw|power grid|interconnect(?:ion)?)\b/) ||
+    has(/\b(tsmc|asml|foundry|hbm|nvlink|supercluster|ai campus|ai factory)\b/)
+  ) {
+    return "AI Infrastructure";
+  }
+
+  if (
+    has(/\b(openai|anthropic|chatgpt|claude|gemini|grok|xai|deepseek|llm|superintelligence)\b/) ||
+    has(/\b(nvidia|gpu|gpus|semiconductor|ai model|language model)\b/) ||
+    has(/\bai\b/)
+  ) {
+    return "AI";
+  }
+
+  if (
+    has(/\b(federal reserve|the fed|fed|fomc|powell|warsh|jackson hole)\b/) ||
+    has(/\b(cpi|pce|nfp|nonfarm|inflation|rate[- ]hike|rate[- ]cut|basis points?|bps)\b/) ||
+    has(/\b(ecb|boj|gdp|unemployment|jobs report|treasury yield|dxy|dollar index)\b/)
+  ) {
+    return "Macro";
+  }
+
+  if (
+    has(/\b(earnings|ipo|share price|stock price|equit(?:y|ies)|listed shares)\b/) ||
+    has(/\b(tesla|apple|microsoft|amazon|alphabet|google|meta|microstrategy|strategy)\b/) ||
+    has(/\b(tslab|aaplb|mstrb|nvdab|spcxb|bstocks?)\b/)
+  ) {
+    return "Equities";
+  }
+
+  if (
+    has(/\b(s&p|s & p|nasdaq|dow jones|kospi|hang seng|nikkei|stoxx)\b/) ||
+    has(/\b(crude|brent|wti|oil price|gold|silver|copper|commodit(?:y|ies)|yield curve)\b/) ||
+    has(/\b(risk[- ]on|risk[- ]off|selloff|sell-off|rally)\b/)
+  ) {
+    return "Markets";
+  }
+
+  if (
+    has(/\b(bitcoin|btc|ethereum|ether|\beth\b|solana|\bsol\b|xrp|ripple|crypto|defi|stablecoin|altcoin)\b/)
+  ) {
+    return "Crypto";
+  }
+
   return "Crypto";
 }
 
