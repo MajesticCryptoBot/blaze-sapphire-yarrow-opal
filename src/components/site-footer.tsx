@@ -16,13 +16,13 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
           <div className="flex items-center gap-4 text-sm text-muted">
-            <Link to="/" className="hover:text-foreground">
+            <Link to="/" search={{ q: "" }} className="transition-colors hover:text-azure">
               Wire
             </Link>
-            <Link to="/markets" className="hover:text-foreground">
+            <Link to="/markets" className="transition-colors hover:text-azure">
               Markets
             </Link>
-            <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">
+            <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" className="transition-colors hover:text-azure">
               Channel
             </a>
           </div>

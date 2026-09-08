@@ -17,6 +17,7 @@
   --color-info: #8a9bb0;
   --color-up: #6aa84f;
   --color-down: #c45c4a;
+  --color-azure: #7eb8ce;
 
   --font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif;
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -60,6 +61,7 @@
     --color-info: #4d5c70;
     --color-up: #2f7d32;
     --color-down: #b42318;
+    --color-azure: #1a6d88;
   }
 
   html[data-theme="light"].antialiased {

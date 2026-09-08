@@ -100,7 +100,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
                 href={latest.messageUrl || TELEGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-primary transition-colors hover:text-azure"
               >
                 Telegram <ExternalLink className="size-3" />
               </a>

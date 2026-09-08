@@ -35,10 +35,10 @@ export function DeskStrip() {
           const href = itemHref(item);
           const active = pathname === href;
           const className = cn(
-            "flex h-11 shrink-0 items-center px-3 text-[13px] tracking-wide transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "flex h-11 shrink-0 items-center px-3 text-[13px] tracking-wide transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
             active
-              ? "font-medium text-foreground shadow-[inset_0_-2px_0_0_currentColor]"
-              : "text-muted hover:text-foreground",
+              ? "font-medium text-azure shadow-[inset_0_-2px_0_0_currentColor]"
+              : "text-muted hover:text-azure",
           );
 
           if (item.to === "/") {
@@ -67,7 +67,7 @@ export function DeskStrip() {
           href={TELEGRAM_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex h-11 shrink-0 items-center px-3 text-[13px] tracking-wide text-muted hover:text-foreground"
+          className="flex h-11 shrink-0 items-center px-3 text-[13px] tracking-wide text-muted transition-colors duration-[var(--motion-quick)] hover:text-azure"
         >
           Telegram
         </a>

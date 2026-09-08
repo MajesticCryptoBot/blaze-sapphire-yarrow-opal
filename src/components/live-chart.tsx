@@ -190,7 +190,7 @@ export function LiveChart({ className }: { className?: string }) {
               onClick={() => setSymbol(item)}
               className={cn(
                 "h-8 shrink-0 rounded-sm px-2 font-mono text-[11px]",
-                symbol === item ? "bg-primary text-primary-foreground" : "text-muted hover:text-foreground",
+                symbol === item ? "bg-primary text-primary-foreground" : "text-muted hover:text-azure",
               )}
             >
               {item}

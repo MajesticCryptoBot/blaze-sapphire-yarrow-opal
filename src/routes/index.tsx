@@ -113,7 +113,7 @@ function Home() {
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {CATEGORIES.map((c) => (
-            <button key={c} type="button" onClick={() => setCat(c)} className={cn("h-11 shrink-0 rounded-sm border px-3 text-xs font-medium", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted hover:text-foreground")}>{c}</button>
+            <button key={c} type="button" onClick={() => setCat(c)} className={cn("h-11 shrink-0 rounded-sm border px-3 text-xs font-medium transition-colors", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted hover:border-azure hover:text-azure")}>{c}</button>
           ))}
         </div>
       </div>

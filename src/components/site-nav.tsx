@@ -94,10 +94,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         const href = "params" in item && item.params ? `/${item.params.slug}` : item.to;
         const active = pathname === href;
         const className = cn(
-          "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
           active
-            ? "bg-elevated text-foreground"
-            : "text-muted hover:bg-elevated hover:text-foreground",
+            ? "bg-azure/10 text-azure"
+            : "text-muted hover:bg-azure/10 hover:text-azure",
         );
 
         if (item.to === "/") {

@@ -63,8 +63,8 @@ export function ArticleCard({
       <h2
         className={
           featured
-            ? "mt-4 font-display text-xl font-medium leading-snug text-foreground sm:text-2xl group-hover:text-primary transition-colors"
-            : "mt-3 font-display text-lg font-medium leading-snug text-foreground group-hover:text-primary transition-colors"
+            ? "mt-4 font-display text-xl font-medium leading-snug text-foreground sm:text-2xl group-hover:text-azure transition-colors"
+            : "mt-3 font-display text-lg font-medium leading-snug text-foreground group-hover:text-azure transition-colors"
         }
       >
         {article.headline}

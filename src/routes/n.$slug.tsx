@@ -25,7 +25,7 @@ export const Route = createFileRoute("/n/$slug")({
 });
 
 function StoryBack({ from }: { from: string }) {
-  const className = "inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground";
+  const className = "inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure";
 
   if (from && isDeskSlug(from)) {
     return (

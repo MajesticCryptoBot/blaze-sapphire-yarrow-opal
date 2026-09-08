@@ -132,7 +132,7 @@ function Markets() {
       <Link
         to="/"
         search={{ q: "" }}
-        className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+        className="inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure"
       >
         <ArrowLeft className="size-4" />
         Back
