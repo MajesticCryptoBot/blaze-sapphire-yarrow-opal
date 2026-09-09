@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BINANCE_ASSETS } from "@/lib/binance-markets";
 import { fetchPairCandles, type Candle } from "@/lib/market-charts";
 
-const CACHE_TTL_MS = 180_000;
-const SYMBOLS = new Set(["BTC", "ETH", "XRP", "SOL", "BNB"]);
+const CACHE_TTL_MS = 30_000;
+const SYMBOLS = new Set(BINANCE_ASSETS.filter((asset) => asset.group === "crypto").map((asset) => asset.symbol));
 
 type CacheState = { expiresAt: number; data: Record<string, Candle[]> };
 const globalRef = globalThis as typeof globalThis & {

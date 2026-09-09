@@ -1,7 +1,4 @@
-import { CMC_ASSETS, parseCmcMarkets, type MarketQuote } from "../../src/lib/cmc-markets";
-
-const CMC_URL = "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest";
-const CACHE_TTL_MS = 3 * 60 * 1000;
+import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "../../src/lib/binance-markets";
 
 type Cached = {
   fetchedAt: number;
@@ -9,43 +6,20 @@ type Cached = {
 };
 
 const globalRef = globalThis as typeof globalThis & {
-  __cmcMarketCache__?: Cached;
-  __cmcMarketPromise__?: Promise<Cached>;
+  __binanceMarketCache__?: Cached;
+  __binanceMarketPromise__?: Promise<Cached>;
 };
 
 async function fetchPrices(): Promise<Cached> {
-  const apiKey = process.env.CMC_API_KEY?.trim();
-  if (!apiKey) throw new Error("CMC_API_KEY is not configured");
-
-  const response = await fetch(
-    `${CMC_URL}?id=${CMC_ASSETS.map((asset) => asset.id).join(",")}&convert=USD`,
-    {
-      headers: {
-        Accept: "application/json",
-        "X-CMC_PRO_API_KEY": apiKey,
-      },
-    },
-  );
-
-  const rawText = await response.text();
-  let payload: unknown = {};
-  try {
-    payload = JSON.parse(rawText) as unknown;
-  } catch {
-    throw new Error(`CoinMarketCap returned non-JSON HTTP ${response.status}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(`CoinMarketCap HTTP ${response.status}: ${rawText.slice(0, 300)}`);
-  }
-
-  return { fetchedAt: Date.now(), data: parseCmcMarkets(payload) };
+  const data = await fetchBinanceMarkets();
+  if (data.length === 0) throw new Error("Binance returned no quotes");
+  return { fetchedAt: Date.now(), data };
 }
 
 export default async function handler() {
   const now = Date.now();
-  const cached = globalRef.__cmcMarketCache__;
-  if (cached && now - cached.fetchedAt < CACHE_TTL_MS) {
+  const cached = globalRef.__binanceMarketCache__;
+  if (cached && now - cached.fetchedAt < PRICE_REFRESH_MS) {
     return Response.json({
       data: cached.data,
       fetchedAt: new Date(cached.fetchedAt).toISOString(),
@@ -53,13 +27,13 @@ export default async function handler() {
     });
   }
 
-  globalRef.__cmcMarketPromise__ ??= fetchPrices().finally(() => {
-    globalRef.__cmcMarketPromise__ = undefined;
+  globalRef.__binanceMarketPromise__ ??= fetchPrices().finally(() => {
+    globalRef.__binanceMarketPromise__ = undefined;
   });
 
   try {
-    const fresh = await globalRef.__cmcMarketPromise__;
-    globalRef.__cmcMarketCache__ = fresh;
+    const fresh = await globalRef.__binanceMarketPromise__;
+    globalRef.__binanceMarketCache__ = fresh;
     return Response.json({
       data: fresh.data,
       fetchedAt: new Date(fresh.fetchedAt).toISOString(),

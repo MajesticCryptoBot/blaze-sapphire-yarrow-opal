@@ -1,15 +1,9 @@
-export const CHART_PAIRS = [
-  { symbol: "BTC", pair: "BTCUSDT" },
-  { symbol: "ETH", pair: "ETHUSDT" },
-  { symbol: "XRP", pair: "XRPUSDT" },
-  { symbol: "SOL", pair: "SOLUSDT" },
-  { symbol: "BNB", pair: "BNBUSDT" },
-  { symbol: "SPCXB", pair: "SPCXBUSDT" },
-  { symbol: "TSLAB", pair: "TSLABUSDT" },
-  { symbol: "AAPLB", pair: "AAPLBUSDT" },
-  { symbol: "MSTRB", pair: "MSTRBUSDT" },
-  { symbol: "NVDAB", pair: "NVDABUSDT" },
-] as const;
+import { BINANCE_ASSETS } from "@/lib/binance-markets";
+
+export const CHART_PAIRS = BINANCE_ASSETS.map((asset) => ({
+  symbol: asset.symbol,
+  pair: asset.pair,
+}));
 
 export type ChartSeries = {
   symbol: string;

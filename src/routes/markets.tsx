@@ -4,30 +4,10 @@ import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/sparkline";
 import { LiveChart } from "@/components/live-chart";
 import { useMarketCharts } from "@/components/use-market-charts";
+import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/markets")({ component: Markets });
-
-type Market = {
-  symbol: string;
-  name: string;
-  price: number;
-  change24h: number;
-  lastUpdated: string | null;
-};
-
-const BINANCE_STOCKS = [
-  { apiSymbol: "SPCXBUSDT", symbol: "SPCXB", name: "SpaceX (bStocks)" },
-  { apiSymbol: "TSLABUSDT", symbol: "TSLAB", name: "Tesla (bStocks)" },
-  { apiSymbol: "AAPLBUSDT", symbol: "AAPLB", name: "Apple (bStocks)" },
-  { apiSymbol: "MSTRBUSDT", symbol: "MSTRB", name: "Strategy (bStocks)" },
-  { apiSymbol: "NVDABUSDT", symbol: "NVDAB", name: "NVIDIA (bStocks)" },
-] as const;
-
-const BINANCE_DATA_URLS = [
-  "https://data-api.binance.vision/api/v3/ticker/24hr",
-  "https://api.binance.com/api/v3/ticker/24hr",
-] as const;
 
 function formatPrice(value: number) {
   if (value >= 1000) return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -35,62 +15,8 @@ function formatPrice(value: number) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
 }
 
-async function fetchBinanceStocks(): Promise<Market[]> {
-  const symbols = JSON.stringify(BINANCE_STOCKS.map((item) => item.apiSymbol));
-
-  for (const baseUrl of BINANCE_DATA_URLS) {
-    try {
-      const url = new URL(baseUrl);
-      url.searchParams.set("symbols", symbols);
-
-      const response = await fetch(url.toString(), {
-        cache: "no-store",
-        credentials: "omit",
-        headers: { Accept: "application/json" },
-      });
-
-      if (!response.ok) continue;
-
-      const payload = (await response.json()) as unknown;
-      if (!Array.isArray(payload)) continue;
-
-      const bySymbol = new Map<string, { price: number; change24h: number }>();
-      for (const row of payload) {
-        if (!row || typeof row !== "object") continue;
-        const item = row as Record<string, unknown>;
-        const apiSymbol = String(item.symbol ?? "");
-        const price = Number(item.lastPrice);
-        const change24h = Number(item.priceChangePercent);
-        if (apiSymbol && Number.isFinite(price)) {
-          bySymbol.set(apiSymbol, {
-            price,
-            change24h: Number.isFinite(change24h) ? change24h : 0,
-          });
-        }
-      }
-
-      const now = new Date().toISOString();
-      return BINANCE_STOCKS.flatMap((stock) => {
-        const quote = bySymbol.get(stock.apiSymbol);
-        if (!quote) return [];
-        return [{
-          symbol: stock.symbol,
-          name: stock.name,
-          price: quote.price,
-          change24h: quote.change24h,
-          lastUpdated: now,
-        }];
-      });
-    } catch {
-      // Try the next official Binance public market-data host.
-    }
-  }
-
-  return [];
-}
-
 function Markets() {
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [markets, setMarkets] = useState<MarketQuote[]>([]);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const charts = useMarketCharts();
@@ -99,18 +25,28 @@ function Markets() {
     let active = true;
     const load = async () => {
       try {
-        const [cmcResponse, binanceMarkets] = await Promise.all([
-          fetch("/api/market-prices", { cache: "no-store" }),
-          fetchBinanceStocks(),
-        ]);
+        const response = await fetch("/api/market-prices", { cache: "no-store" });
+        if (response.ok) {
+          const payload = (await response.json()) as { data?: MarketQuote[] };
+          const rows = payload.data ?? [];
+          if (rows.length > 0) {
+            if (active) {
+              setMarkets(rows);
+              setError(false);
+              setLoaded(true);
+            }
+            return;
+          }
+        }
+      } catch {
+        // Fall through to a direct Binance public request.
+      }
 
-        if (!cmcResponse.ok) throw new Error("market request failed");
-        const payload = (await cmcResponse.json()) as { data?: Market[] };
-        const cmcMarkets = payload.data ?? [];
-
+      try {
+        const rows = await fetchBinanceMarkets();
         if (active) {
-          setMarkets([...cmcMarkets, ...binanceMarkets]);
-          setError(cmcMarkets.length === 0 && binanceMarkets.length === 0);
+          setMarkets(rows);
+          setError(rows.length === 0);
         }
       } catch {
         if (active) setError(true);
@@ -120,7 +56,7 @@ function Markets() {
     };
 
     void load();
-    const timer = window.setInterval(load, 180_000);
+    const timer = window.setInterval(load, PRICE_REFRESH_MS);
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -142,8 +78,7 @@ function Markets() {
       </p>
       <h1 className="mt-3 font-display text-4xl font-medium">Markets</h1>
       <p className="mt-3 max-w-xl text-muted">
-        Live USD quotes for Bitcoin, Ether, XRP, Solana, and BNB, plus Binance
-        bStocks for SpaceX, Tesla, Apple, Strategy, and NVIDIA.
+        Live Binance quotes, refreshed every five seconds, for majors, alts, and bStocks.
       </p>
 
       <LiveChart className="mt-8" />

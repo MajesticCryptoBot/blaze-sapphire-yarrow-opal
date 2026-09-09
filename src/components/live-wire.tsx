@@ -4,16 +4,10 @@ import { Sparkline } from "@/components/sparkline";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { useMarketCharts } from "@/components/use-market-charts";
+import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { formatTime } from "@/lib/news";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
-
-type Market = {
-  symbol: string;
-  name: string;
-  price: number;
-  change24h: number;
-};
 
 function formatPrice(value: number) {
   if (value >= 1000) return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -22,7 +16,7 @@ function formatPrice(value: number) {
 }
 
 export function LiveWire({ latest }: { latest?: TelegramPost }) {
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [markets, setMarkets] = useState<MarketQuote[]>([]);
   const [marketError, setMarketError] = useState(false);
   const charts = useMarketCharts();
 
@@ -31,11 +25,26 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
     const loadMarkets = async () => {
       try {
         const response = await fetch("/api/market-prices", { cache: "no-store" });
-        if (!response.ok) throw new Error("market request failed");
-        const payload = (await response.json()) as { data?: Market[] };
+        if (response.ok) {
+          const payload = (await response.json()) as { data?: MarketQuote[] };
+          const rows = (payload.data ?? []).filter((row) => row.group !== "bstock");
+          if (rows.length > 0) {
+            if (active) {
+              setMarkets(rows);
+              setMarketError(false);
+            }
+            return;
+          }
+        }
+      } catch {
+        // Fall through to a direct Binance public request.
+      }
+
+      try {
+        const rows = (await fetchBinanceMarkets()).filter((row) => row.group !== "bstock");
         if (active) {
-          setMarkets(payload.data ?? []);
-          setMarketError(false);
+          setMarkets(rows);
+          setMarketError(rows.length === 0);
         }
       } catch {
         if (active) setMarketError(true);
@@ -43,7 +52,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
     };
 
     void loadMarkets();
-    const timer = window.setInterval(loadMarkets, 180_000);
+    const timer = window.setInterval(loadMarkets, PRICE_REFRESH_MS);
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -116,7 +125,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div>
             <h2 className="font-display text-2xl">Spot tape</h2>
-            <p className="mt-1 text-xs text-muted">USD · session quotes</p>
+            <p className="mt-1 text-xs text-muted">USD · Binance · 5s</p>
           </div>
           <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Live</span>
         </div>
@@ -128,7 +137,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
         ) : (
           <div className="divide-y divide-border">
             {markets.map((market) => (
-              <div key={market.symbol} className="flex items-center justify-between gap-3 py-4">
+              <div key={market.symbol} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
                   <div className="font-mono text-sm font-semibold">{market.symbol}</div>
                   <div className="text-xs text-muted">{market.name}</div>

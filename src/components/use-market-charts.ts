@@ -31,7 +31,7 @@ export function useMarketCharts() {
     };
 
     void load();
-    const timer = window.setInterval(load, 180_000);
+    const timer = window.setInterval(load, 30_000);
     return () => {
       active = false;
       window.clearInterval(timer);

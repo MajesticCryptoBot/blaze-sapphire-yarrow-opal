@@ -1,28 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sparkline } from "@/components/sparkline";
 import { useMarketCharts } from "@/components/use-market-charts";
+import { BINANCE_ASSETS, PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { cn } from "@/lib/utils";
-
-type LiveMarket = {
-  symbol: string;
-  price: number;
-  change24h: number;
-};
-
-const CRYPTO_SYMBOLS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
-const BSTOCKS = [
-  { apiSymbol: "SPCXBUSDT", symbol: "SPCXB" },
-  { apiSymbol: "TSLABUSDT", symbol: "TSLAB" },
-  { apiSymbol: "AAPLBUSDT", symbol: "AAPLB" },
-  { apiSymbol: "MSTRBUSDT", symbol: "MSTRB" },
-  { apiSymbol: "NVDABUSDT", symbol: "NVDAB" },
-] as const;
-const SYMBOLS = [...CRYPTO_SYMBOLS, ...BSTOCKS.map((item) => item.symbol)];
-const REFRESH_MS = 180_000;
-const BINANCE_DATA_URLS = [
-  "https://data-api.binance.vision/api/v3/ticker/24hr",
-  "https://api.binance.com/api/v3/ticker/24hr",
-] as const;
 
 function formatPrice(price: number) {
   if (price >= 1000) return price.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -30,78 +10,37 @@ function formatPrice(price: number) {
   return price.toLocaleString("en-US", { maximumFractionDigits: 6 });
 }
 
-async function fetchBinanceStocks(): Promise<LiveMarket[]> {
-  const symbols = JSON.stringify(BSTOCKS.map((item) => item.apiSymbol));
-
-  for (const baseUrl of BINANCE_DATA_URLS) {
-    try {
-      const url = new URL(baseUrl);
-      url.searchParams.set("symbols", symbols);
-
-      const response = await fetch(url.toString(), {
-        cache: "no-store",
-        credentials: "omit",
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) continue;
-
-      const payload = (await response.json()) as unknown;
-      if (!Array.isArray(payload)) continue;
-
-      const bySymbol = new Map<string, { price: number; change24h: number }>();
-      for (const row of payload) {
-        if (!row || typeof row !== "object") continue;
-        const item = row as Record<string, unknown>;
-        const apiSymbol = String(item.symbol ?? "");
-        const price = Number(item.lastPrice);
-        const change24h = Number(item.priceChangePercent);
-        if (apiSymbol && Number.isFinite(price)) {
-          bySymbol.set(apiSymbol, {
-            price,
-            change24h: Number.isFinite(change24h) ? change24h : 0,
-          });
-        }
-      }
-
-      return BSTOCKS.flatMap((stock) => {
-        const quote = bySymbol.get(stock.apiSymbol);
-        if (!quote) return [];
-        return [{ symbol: stock.symbol, price: quote.price, change24h: quote.change24h }];
-      });
-    } catch {
-      // Try the next official Binance public market-data host.
-    }
-  }
-
-  return [];
-}
-
 export function TickerBar() {
-  const [liveMarkets, setLiveMarkets] = useState<LiveMarket[]>([]);
+  const [liveMarkets, setLiveMarkets] = useState<MarketQuote[]>([]);
   const charts = useMarketCharts();
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        const [cmcResponse, binanceStocks] = await Promise.all([
-          fetch("/api/market-prices", { cache: "no-store" }),
-          fetchBinanceStocks(),
-        ]);
-        if (!cmcResponse.ok) throw new Error("market request failed");
+        const response = await fetch("/api/market-prices", { cache: "no-store" });
+        if (response.ok) {
+          const payload = (await response.json()) as { data?: MarketQuote[] };
+          const rows = payload.data ?? [];
+          if (rows.length > 0) {
+            if (active) setLiveMarkets(rows);
+            return;
+          }
+        }
+      } catch {
+        // Fall through to a direct Binance public request.
+      }
 
-        const payload = (await cmcResponse.json()) as { data?: LiveMarket[] };
-        const cmcMarkets = payload.data ?? [];
-        const combined = [...cmcMarkets, ...binanceStocks];
-
-        if (active) setLiveMarkets(combined);
+      try {
+        const rows = await fetchBinanceMarkets();
+        if (active && rows.length > 0) setLiveMarkets(rows);
       } catch {
         // Keep last good tape visible.
       }
     };
 
     void load();
-    const timer = window.setInterval(load, REFRESH_MS);
+    const timer = window.setInterval(load, PRICE_REFRESH_MS);
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -110,10 +49,10 @@ export function TickerBar() {
 
   const items = useMemo(() => {
     const liveBySymbol = new Map(liveMarkets.map((market) => [market.symbol, market]));
-    return SYMBOLS.map((symbol) => {
-      const live = liveBySymbol.get(symbol);
+    return BINANCE_ASSETS.map((asset) => {
+      const live = liveBySymbol.get(asset.symbol);
       return {
-        symbol,
+        symbol: asset.symbol,
         price: live?.price ?? null,
         change: live?.change24h ?? null,
       };
@@ -125,7 +64,7 @@ export function TickerBar() {
   return (
     <div className="border-y border-border bg-surface md:pl-12">
       <div className="flex overflow-hidden">
-        <div className="flex min-w-max animate-[ticker_36s_linear_infinite] motion-reduce:animate-none">
+        <div className="flex min-w-max animate-[ticker_56s_linear_infinite] motion-reduce:animate-none">
           {loop.map((t, i) => {
             const up = (t.change ?? 0) >= 0;
             return (

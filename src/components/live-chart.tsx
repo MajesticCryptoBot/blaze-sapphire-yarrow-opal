@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchPairCandles, type Candle } from "@/lib/market-charts";
 import { cn } from "@/lib/utils";
 
-const PAIRS = ["BTC", "ETH", "XRP", "SOL", "BNB"] as const;
+const PAIRS = ["BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "TRX", "NEAR", "ZEC", "GRAM"] as const;
 const WIDTH = 720;
 const HEIGHT = 280;
 const PAD_RIGHT = 64;
