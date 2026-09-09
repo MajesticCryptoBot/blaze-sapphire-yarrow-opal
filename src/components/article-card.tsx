@@ -23,9 +23,9 @@ export function ArticleCard({
   from?: string;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
-  const hasMedia = Boolean(
-    featured && article._telegramId && (article._hasVideo || article._hasPhoto),
-  );
+  const hasVideo = Boolean(article._telegramId && article._hasVideo);
+  const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
+  const hasMedia = hasVideo || hasPhotos;
 
   return (
     <Link
@@ -47,8 +47,12 @@ export function ArticleCard({
           onClick={article._hasVideo ? (event) => event.preventDefault() : undefined}
           onPointerDown={article._hasVideo ? (event) => event.stopPropagation() : undefined}
         >
-          {article._hasVideo ? (
-            <StoryVideo id={article._telegramId} mimeType={article._videoMimeType} />
+          {hasVideo && article._telegramId ? (
+            <StoryVideo
+              id={article._telegramId}
+              mimeType={article._videoMimeType}
+              size={featured ? "article" : "card"}
+            />
           ) : (
             <StoryPhotos
               id={article._telegramId}

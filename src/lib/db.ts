@@ -79,6 +79,8 @@ async function createTursoSql(): Promise<Sql> {
       const additions = [];
       if (!names.has("photo_data_2")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_data_2 BLOB" });
       if (!names.has("photo_mime_type_2")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_mime_type_2 TEXT" });
+      if (!names.has("video_data")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_data BLOB" });
+      if (!names.has("video_mime_type")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_mime_type TEXT" });
       if (additions.length) await client.batch(additions, "write");
     })();
     await globalRef.__tursoSchemaPromise__;

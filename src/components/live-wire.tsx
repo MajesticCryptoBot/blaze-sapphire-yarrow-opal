@@ -82,7 +82,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <article className="py-5">
             {latest.hasVideo ? (
               <div className="mb-4">
-                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} />
+                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} size="wire" />
               </div>
             ) : latest.hasPhoto ? (
               <div className="mb-4">

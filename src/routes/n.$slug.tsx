@@ -76,7 +76,7 @@ function ArticlePage() {
 
         {post.hasVideo ? (
           <div className="mt-6">
-            <StoryVideo id={post.id} mimeType={post.videoMimeType} />
+            <StoryVideo id={post.id} mimeType={post.videoMimeType} size="article" />
           </div>
         ) : post.hasPhoto ? (
           <div className="mt-6">

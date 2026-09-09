@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-const INGEST_VERSION = "ASP-INGEST-V12-VIDEO-20260903";
+const INGEST_VERSION = "ASP-INGEST-V13-VIDEO-20260909";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
-const MAX_VIDEO_BASE64 = 3_200_000;
+const MAX_VIDEO_BASE64 = 4_000_000;
 
 function json(body: unknown, status = 200): Response {
   return Response.json(body, {
