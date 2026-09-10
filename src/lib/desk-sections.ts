@@ -1,192 +1,13 @@
-export type DeskSection = {
-  slug: string;
-  label: string;
-  kicker: string;
-  headline: string;
-  dek: string;
-  wireTerms: string[];
-};
+export type DeskSection = { slug: string; label: string; kicker: string; headline: string; dek: string; wireTerms: string[] };
 
 export const DESK_SECTIONS: DeskSection[] = [
-  {
-    slug: "news",
-    label: "News",
-    kicker: "Newsroom",
-    headline: "News",
-    dek: "The full ASP tape — every brief, photo, and video as it hits the desk.",
-    wireTerms: [],
-  },
-  {
-    slug: "bitcoin",
-    label: "Bitcoin",
-    kicker: "Bitcoin desk",
-    headline: "Bitcoin",
-    dek: "BTC, ETF flows, miners, treasuries, and the monetary debate around Bitcoin.",
-    wireTerms: ["bitcoin", "btc", "satoshi", "ordinals", "sats"],
-  },
-  {
-    slug: "ethereum",
-    label: "Ethereum",
-    kicker: "Ethereum desk",
-    headline: "Ethereum",
-    dek: "Ether, the L2 stack, staking, and Ethereum market structure.",
-    wireTerms: ["ethereum", "ether", "eth"],
-  },
-  {
-    slug: "solana",
-    label: "Solana",
-    kicker: "Solana desk",
-    headline: "Solana",
-    dek: "SOL, Solana apps, validators, and network events.",
-    wireTerms: ["solana", "sol"],
-  },
-  {
-    slug: "xrp",
-    label: "XRP",
-    kicker: "XRP desk",
-    headline: "XRP",
-    dek: "Ripple, XRP liquidity, and the legal tape around the token.",
-    wireTerms: ["xrp", "ripple"],
-  },
-  {
-    slug: "regulation",
-    label: "Regulation",
-    kicker: "Policy desk",
-    headline: "Regulation",
-    dek: "SEC, CFTC, ETFs, lawsuits, and market-structure rules.",
-    wireTerms: [
-      "regulation",
-      "regulator",
-      "sec",
-      "cftc",
-      "esma",
-      "mica",
-      "lawsuit",
-      "subpoena",
-      "etf",
-      "compliance",
-      "ban",
-      "banned",
-      "policy",
-      "congress",
-      "senate",
-      "bill",
-    ],
-  },
-  {
-    slug: "altcoins",
-    label: "Altcoins",
-    kicker: "Altcoin desk",
-    headline: "Altcoins",
-    dek: "Ethereum, Solana, XRP, and the rest of the tape outside Bitcoin.",
-    wireTerms: [
-      "ethereum",
-      "ether",
-      "eth",
-      "solana",
-      "sol",
-      "xrp",
-      "ripple",
-      "dogecoin",
-      "doge",
-      "cardano",
-      "ada",
-      "avalanche",
-      "avax",
-      "chainlink",
-      "altcoin",
-      "altcoins",
-      "bnb",
-      "polygon",
-      "ton",
-      "sui",
-      "hype",
-    ],
-  },
-  {
-    slug: "us",
-    label: "US",
-    kicker: "United States",
-    headline: "United States",
-    dek: "The Fed, Treasury, Washington, and U.S. macro that moves risk assets.",
-    wireTerms: [
-      "united states",
-      "u.s.",
-      "u.s",
-      "usa",
-      "washington",
-      "white house",
-      "federal reserve",
-      "the fed",
-      "fomc",
-      "powell",
-      "warsh",
-      "treasury",
-      "dollar",
-      "dxy",
-      "cpi",
-      "nfp",
-      "nonfarm",
-      "wall street",
-      "nasdaq",
-      "s&p",
-      "nyse",
-    ],
-  },
-  {
-    slug: "international",
-    label: "International",
-    kicker: "World desk",
-    headline: "International",
-    dek: "Non-U.S. briefs from the tape — Europe, Asia, and the rest of the world.",
-    wireTerms: [],
-  },
-  {
-    slug: "china",
-    label: "China",
-    kicker: "China desk",
-    headline: "China",
-    dek: "Beijing policy, Chinese markets, and the China-crypto corridor.",
-    wireTerms: [
-      "china",
-      "chinese",
-      "beijing",
-      "shanghai",
-      "shenzhen",
-      "hong kong",
-      "pboc",
-      "yuan",
-      "renminbi",
-      "hang seng",
-      "alibaba",
-      "tencent",
-      "bytedance",
-    ],
-  },
-  {
-    slug: "russia",
-    label: "Russia",
-    kicker: "Russia desk",
-    headline: "Russia",
-    dek: "Moscow, the ruble, and Russia-related market and crypto briefs.",
-    wireTerms: ["russia", "russian", "moscow", "kremlin", "putin", "ruble", "rouble", "cbr", "gazprom"],
-  },
-  {
-    slug: "fun-facts",
-    label: "Fun Facts",
-    kicker: "Notebook",
-    headline: "Fun facts",
-    dek: "Short notes, curiosities, and asides from the tape.",
-    wireTerms: ["fun fact", "fun facts", "did you know", "trivia", "curious", "odd", "notebook", "aside"],
-  },
-  {
-    slug: "videos",
-    label: "Videos",
-    kicker: "Video desk",
-    headline: "Videos",
-    dek: "Every brief on the tape that arrived with video.",
-    wireTerms: [],
-  },
+  { slug: "crypto", label: "Crypto", kicker: "Crypto desk", headline: "Crypto", dek: "Bitcoin, Ethereum, Solana, XRP, stablecoins, ETFs, market structure, and the wider digital-asset tape.", wireTerms: ["bitcoin", "btc", "ethereum", "ether", "eth", "solana", "sol", "xrp", "ripple", "crypto", "cryptocurrency", "stablecoin", "token", "blockchain", "defi", "web3", "altcoin", "dogecoin", "cardano", "bnb", "sui", "etf"] },
+  { slug: "tech", label: "Tech", kicker: "Technology desk", headline: "Tech", dek: "Major technology companies, products, platforms, chips, and the businesses shaping the digital economy.", wireTerms: ["apple", "microsoft", "nvidia", "amazon", "google", "alphabet", "meta", "tesla", "oracle", "amd", "intel", "qualcomm", "broadcom", "tsmc", "samsung", "technology", "tech", "iphone", "windows", "azure", "cloud", "semiconductor", "chip"] },
+  { slug: "ai", label: "AI", kicker: "Artificial intelligence desk", headline: "AI", dek: "Artificial intelligence progress, models, products, research, infrastructure, and new capabilities.", wireTerms: ["artificial intelligence", "ai", "openai", "chatgpt", "anthropic", "claude", "gemini", "deepmind", "llm", "language model", "machine learning", "generative ai", "agentic", "ai model", "gpu"] },
+  { slug: "stocks", label: "Stocks", kicker: "Equities desk", headline: "Stocks", dek: "Equity-market news, listed companies, earnings, indices, and developments affecting stock prices.", wireTerms: ["stock", "stocks", "shares", "equity", "equities", "earnings", "nasdaq", "nyse", "s&p 500", "dow jones", "wall street", "eps", "revenue", "guidance", "ipo", "buyback", "dividend"] },
+  { slug: "innovation", label: "Innovation", kicker: "Innovation desk", headline: "Innovation", dek: "Forward-looking ideas, breakthroughs, products, and technologies with the potential to reshape markets and society.", wireTerms: ["innovation", "breakthrough", "prototype", "robotics", "quantum", "fusion", "biotech", "battery", "space technology", "autonomous", "new technology", "research breakthrough"] },
+  { slug: "next-events", label: "Next Events", kicker: "Market calendar", headline: "Next Events", dek: "Selected market-moving events from official macro calendars, including CPI, employment data, and Federal Reserve decisions.", wireTerms: [] },
+  { slug: "fun-facts", label: "Fun Facts", kicker: "Notebook", headline: "Fun facts", dek: "Short notes, curiosities, and asides from the tape.", wireTerms: ["fun fact", "fun facts", "did you know", "trivia", "curious", "odd", "notebook", "aside"] },
 ];
 
 function termPattern(term: string) {
@@ -194,26 +15,11 @@ function termPattern(term: string) {
   if (term.length <= 4) return new RegExp(`\\b${escaped}\\b`, "i");
   return new RegExp(escaped, "i");
 }
-
-function matchesTerms(text: string, terms: string[]) {
-  return terms.some((term) => termPattern(term).test(text));
-}
-
+function matchesTerms(text: string, terms: string[]) { return terms.some((term) => termPattern(term).test(text)); }
 export function matchesDesk(post: { text: string; hasVideo?: boolean }, section: DeskSection) {
-  if (section.slug === "news") return true;
-  if (section.slug === "videos") return Boolean(post.hasVideo);
-  if (section.slug === "international") {
-    const us = DESK_SECTIONS.find((item) => item.slug === "us");
-    return us ? !matchesTerms(post.text, us.wireTerms) : true;
-  }
+  if (section.slug === "next-events") return false;
   if (section.wireTerms.length === 0) return true;
   return matchesTerms(post.text, section.wireTerms);
 }
-
-export function getDeskSection(slug: string): DeskSection | undefined {
-  return DESK_SECTIONS.find((section) => section.slug === slug);
-}
-
-export function isDeskSlug(slug: string): boolean {
-  return DESK_SECTIONS.some((section) => section.slug === slug);
-}
+export function getDeskSection(slug: string): DeskSection | undefined { return DESK_SECTIONS.find((section) => section.slug === slug); }
+export function isDeskSlug(slug: string): boolean { return DESK_SECTIONS.some((section) => section.slug === slug); }
