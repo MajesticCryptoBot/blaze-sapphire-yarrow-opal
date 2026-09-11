@@ -6,7 +6,7 @@ import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
-import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
+import { parsePublicId, splitHeadline, tagFromText, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
 import { storyPath } from "@/lib/story-url";
 
 export const Route = createFileRoute("/n/$slug")({
@@ -16,13 +16,19 @@ export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
     const id = parsePublicId(params.slug);
     if (id === null) return { post: null as TelegramPost | null };
-
-    const response = await fetch(`/api/news/${id}`);
-    if (!response.ok) return { post: null as TelegramPost | null };
-    const payload = (await response.json()) as { post?: TelegramPost };
-    return { post: payload.post ?? null };
+    try {
+      const post = await getTelegramPost(id);
+      return { post };
+    } catch (error) {
+      console.error("[story]", error instanceof Error ? error.message : error);
+      return { post: null as TelegramPost | null };
+    }
   },
-  head: () => ({ meta: [{ title: "ASP News" }] }),
+  head: ({ loaderData }) => {
+    const text = loaderData?.post?.text ?? "";
+    const headline = text ? splitHeadline(text).headline : "ASP News";
+    return { meta: [{ title: `${headline} — ASP News` }] };
+  },
   component: ArticlePage,
 });
 
