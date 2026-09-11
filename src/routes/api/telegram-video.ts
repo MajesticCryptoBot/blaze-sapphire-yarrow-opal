@@ -12,7 +12,11 @@ export const Route = createFileRoute("/api/telegram-video")({
         }
 
         const row = await getTelegramVideo(id);
-        if (!row?.video_data) return new Response("Not found", { status: 404 });
+        if (!row?.video_url && !row?.video_data) return new Response("Not found", { status: 404 });
+
+        if (row.video_url) {
+          return Response.redirect(row.video_url, 302);
+        }
 
         const bytes = row.video_data instanceof Uint8Array
           ? row.video_data
