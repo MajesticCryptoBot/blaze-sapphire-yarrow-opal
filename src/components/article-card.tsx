@@ -11,6 +11,7 @@ type ArticleWithTelegram = Article & {
   _hasPhoto2?: boolean;
   _hasVideo?: boolean;
   _videoMimeType?: string | null;
+  _videoUrl?: string | null;
   _messageUrl?: string | null;
 };
 
@@ -38,6 +39,7 @@ export function ArticleCard({
             <StoryVideo
               id={article._telegramId}
               mimeType={article._videoMimeType}
+              videoUrl={article._videoUrl}
               size={featured ? "article" : "card"}
             />
           ) : (
