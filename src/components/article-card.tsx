@@ -1,7 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
+import { ShareBar } from "@/components/share-bar";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime, type Article } from "@/lib/news";
 import { storyPath } from "@/lib/story-url";
@@ -26,6 +25,7 @@ export function ArticleCard({
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
   const path = storyPath(article._telegramId ?? slug);
+  const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
   const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
@@ -51,10 +51,8 @@ export function ArticleCard({
         </div>
       ) : null}
 
-      <Link
-        to="/n/$slug"
-        params={{ slug }}
-        search={{ from }}
+      <a
+        href={storyHref}
         className="group block p-5 pb-2"
       >
         <div className="flex items-center justify-between gap-3">
@@ -91,7 +89,7 @@ export function ArticleCard({
             </span>
           ))}
         </div>
-      </Link>
+      </a>
       <div className="px-5 pb-3">
         <ShareBar title={article.headline} path={path} />
       </div>
