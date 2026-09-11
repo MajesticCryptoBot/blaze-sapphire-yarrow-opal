@@ -1,21 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Bitcoin,
-  Building2,
-  Castle,
-  Clapperboard,
+  CalendarDays,
   Coins,
-  Globe,
-  Hexagon,
+  Cpu,
   Home,
-  Landmark,
   Lightbulb,
   Menu,
-  Newspaper,
-  Scale,
+  Rocket,
   Sparkles,
   TrendingUp,
-  Waves,
   X,
 } from "lucide-react";
 import {
@@ -32,20 +25,13 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   { label: "Home", to: "/" as const, icon: Home },
-  { label: "News", to: "/$slug" as const, params: { slug: "news" }, icon: Newspaper },
-  { label: "Market", to: "/markets" as const, icon: TrendingUp },
-  { label: "Bitcoin", to: "/$slug" as const, params: { slug: "bitcoin" }, icon: Bitcoin },
-  { label: "Ethereum", to: "/$slug" as const, params: { slug: "ethereum" }, icon: Hexagon },
-  { label: "Solana", to: "/$slug" as const, params: { slug: "solana" }, icon: Sparkles },
-  { label: "XRP", to: "/$slug" as const, params: { slug: "xrp" }, icon: Waves },
-  { label: "Altcoins", to: "/$slug" as const, params: { slug: "altcoins" }, icon: Coins },
-  { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
-  { label: "US", to: "/$slug" as const, params: { slug: "us" }, icon: Landmark },
-  { label: "International", to: "/$slug" as const, params: { slug: "international" }, icon: Globe },
-  { label: "China", to: "/$slug" as const, params: { slug: "china" }, icon: Building2 },
-  { label: "Russia", to: "/$slug" as const, params: { slug: "russia" }, icon: Castle },
+  { label: "Crypto", to: "/$slug" as const, params: { slug: "crypto" }, icon: Coins },
+  { label: "Tech", to: "/$slug" as const, params: { slug: "tech" }, icon: Cpu },
+  { label: "AI", to: "/$slug" as const, params: { slug: "ai" }, icon: Sparkles },
+  { label: "Stocks", to: "/$slug" as const, params: { slug: "stocks" }, icon: TrendingUp },
+  { label: "Innovation", to: "/$slug" as const, params: { slug: "innovation" }, icon: Rocket },
+  { label: "The Calendar", to: "/calendar" as const, icon: CalendarDays },
   { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
-  { label: "Videos", to: "/$slug" as const, params: { slug: "videos" }, icon: Clapperboard },
 ];
 
 type NavContextValue = {
@@ -109,9 +95,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           );
         }
 
-        if (item.to === "/markets") {
+        if (item.to === "/markets" || item.to === "/calendar") {
           return (
-            <Link key={item.label} to="/markets" onClick={onNavigate} className={className}>
+            <Link key={item.label} to={item.to} onClick={onNavigate} className={className}>
               <Icon className="size-4 shrink-0" strokeWidth={1.7} />
               <span>{item.label}</span>
             </Link>

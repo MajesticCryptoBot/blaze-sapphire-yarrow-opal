@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
+import { CRYPTO_FACTS } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
 import { type Article } from "@/lib/news";
 import { categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
@@ -79,13 +80,50 @@ export function DeskPage({ section }: { section: DeskSection }) {
         <p className="mt-4 font-news text-lg leading-[1.6] text-muted">{section.dek}</p>
       </header>
 
+      {section.slug === "fun-facts" ? (
+        <section className="mt-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+            Sourced notebook
+          </p>
+          <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
+            These notes are taken from primary Bitcoin literature — the white paper,
+            the Nakamoto Institute archive, Cambridge’s CBECI, and the SEC — not from
+            recap blogs.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {CRYPTO_FACTS.map((fact) => (
+              <article key={fact.title} className="rounded-lg border border-border bg-surface p-5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{fact.year}</p>
+                <h2 className="mt-2 font-display text-xl font-medium">{fact.title}</h2>
+                <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted">{fact.body}</p>
+                <a
+                  href={fact.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex h-11 items-center text-sm text-azure hover:underline"
+                >
+                  {fact.source} →
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {posts === null ? (
         <p className="mt-10 font-news text-base text-muted">Loading this desk…</p>
       ) : !lead ? (
-        <p className="mt-10 font-news text-base text-muted">No matching briefs on this desk yet.</p>
+        section.slug === "fun-facts" ? null : (
+          <p className="mt-10 font-news text-base text-muted">No matching briefs on this desk yet.</p>
+        )
       ) : (
         <>
-          <div className="mt-8">
+          {section.slug === "fun-facts" ? (
+            <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              From the tape
+            </p>
+          ) : null}
+          <div className={section.slug === "fun-facts" ? "mt-4" : "mt-8"}>
             <ArticleCard article={lead} featured from={section.slug} />
           </div>
           {rest.length > 0 ? (

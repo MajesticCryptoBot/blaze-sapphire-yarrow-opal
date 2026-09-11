@@ -17,13 +17,42 @@ export const Route = createFileRoute("/api/telegram-video")({
         const bytes = row.video_data instanceof Uint8Array
           ? row.video_data
           : new Uint8Array(row.video_data as unknown as ArrayBuffer);
+        const mime = row.video_mime_type || "video/mp4";
+        const range = request.headers.get("range");
+        const match = range ? /bytes=(\d+)-(\d*)/.exec(range) : null;
+
+        if (match) {
+          const start = Number(match[1]);
+          const end = match[2] ? Number(match[2]) : bytes.length - 1;
+          if (start >= bytes.length || end >= bytes.length || start > end) {
+            return new Response(null, {
+              status: 416,
+              headers: { "Content-Range": `bytes */${bytes.length}` },
+            });
+          }
+          const slice = bytes.slice(start, end + 1);
+          return new Response(slice, {
+            status: 206,
+            headers: {
+              "Content-Type": mime,
+              "Content-Length": String(slice.byteLength),
+              "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
+              "Accept-Ranges": "bytes",
+              "Cache-Control": "public, max-age=86400, immutable",
+              "X-Content-Type-Options": "nosniff",
+              "Content-Disposition": "inline",
+            },
+          });
+        }
 
         return new Response(bytes, {
           headers: {
-            "Content-Type": row.video_mime_type || "video/mp4",
+            "Content-Type": mime,
+            "Content-Length": String(bytes.byteLength),
+            "Accept-Ranges": "bytes",
             "Cache-Control": "public, max-age=86400, immutable",
             "X-Content-Type-Options": "nosniff",
-            "Accept-Ranges": "bytes",
+            "Content-Disposition": "inline",
           },
         });
       },

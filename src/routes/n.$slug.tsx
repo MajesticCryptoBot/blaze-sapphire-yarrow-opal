@@ -1,11 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
 import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
+import { storyPath } from "@/lib/story-url";
 
 export const Route = createFileRoute("/n/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -73,6 +75,9 @@ function ArticlePage() {
         </div>
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
+        <div className="mt-3">
+          <ShareBar title={headline} path={storyPath(post.id)} />
+        </div>
 
         {post.hasVideo ? (
           <div className="mt-6">

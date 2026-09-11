@@ -1,31 +1,14 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { HeaderMenuButton } from "@/components/site-nav";
 import { DeskStrip } from "@/components/desk-strip";
 import { ThemeToggle } from "@/components/theme";
+import { WorldClocks } from "@/components/world-clocks";
 
 export function SiteHeader() {
   const navigate = useNavigate();
-  const [now, setNow] = useState(() => new Date());
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const stamp = now.toLocaleString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZone: "UTC",
-    hour12: false,
-  });
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,13 +51,9 @@ export function SiteHeader() {
         </form>
 
         <ThemeToggle />
-
-        <div className="hidden text-right xl:block">
-          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">UTC</div>
-          <div className="font-mono text-[11px] tabular-nums text-muted">{stamp}</div>
-        </div>
       </div>
       <DeskStrip />
+      <WorldClocks />
     </header>
   );
 }
