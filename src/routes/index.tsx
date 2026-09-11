@@ -22,6 +22,7 @@ function toArticle(post: TelegramPost): Article & {
   _hasPhoto2: boolean;
   _hasVideo: boolean;
   _videoMimeType: string | null;
+  _videoUrl: string | null;
   _messageUrl: string | null;
 } {
   const { headline, dek } = splitHeadline(post.text);
@@ -41,6 +42,7 @@ function toArticle(post: TelegramPost): Article & {
     _hasPhoto2: post.hasPhoto2,
     _hasVideo: post.hasVideo,
     _videoMimeType: post.videoMimeType,
+    _videoUrl: post.videoUrl,
     _messageUrl: post.messageUrl,
   };
 }
