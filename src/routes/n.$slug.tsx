@@ -75,9 +75,6 @@ function ArticlePage() {
         </div>
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
-        <div className="mt-3">
-          <ShareBar title={headline} path={storyPath(post.id)} />
-        </div>
 
         {post.hasVideo ? (
           <div className="mt-6">
@@ -96,6 +93,10 @@ function ArticlePage() {
 
         <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground">
           {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+        </div>
+
+        <div className="mt-6 border-t border-border pt-2">
+          <ShareBar title={headline} path={storyPath(post.id)} />
         </div>
 
         {post.messageUrl ? (

@@ -1,4 +1,4 @@
-import { Check, Copy, Share2 } from "lucide-react";
+import { Check, Copy, Share } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { storyAbsoluteUrl } from "@/lib/story-url";
 import { cn } from "@/lib/utils";
@@ -35,18 +35,38 @@ function FacebookMark() {
   );
 }
 
-export function ShareBar({ title, path }: { title: string; path: string }) {
+export function ShareBar({
+  title,
+  path,
+  align = "left",
+}: {
+  title: string;
+  path: string;
+  align?: "left" | "right";
+}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [canNative, setCanNative] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCanNative(typeof navigator !== "undefined" && typeof navigator.share === "function");
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     window.addEventListener("pointerdown", onPointer);
-    return () => window.removeEventListener("pointerdown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const url = storyAbsoluteUrl(path);
@@ -64,15 +84,16 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
   }
 
   async function nativeShare() {
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, url, text: title });
-        setOpen(false);
-      } catch {
-        // User cancelled.
-      }
+    try {
+      await navigator.share({ title, url, text: title });
+      setOpen(false);
+    } catch {
+      // User cancelled.
     }
   }
+
+  const itemClass =
+    "flex h-11 w-full items-center gap-3 rounded-sm px-2 text-sm text-muted transition-colors hover:bg-azure/10 hover:text-azure";
 
   return (
     <div ref={root} className="relative">
@@ -85,28 +106,37 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
           event.stopPropagation();
           setOpen((value) => !value);
         }}
-        className="inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure"
+        className={cn(
+          "inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure",
+          open && "text-azure",
+        )}
       >
-        <Share2 className="size-4" />
-        Share
+        <Share className="size-4" strokeWidth={1.8} />
+        <span>Share</span>
       </button>
 
       {open ? (
-        <div className="absolute left-0 z-30 mt-1 w-56 rounded-md border border-border bg-surface p-2 shadow-xl">
-          <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">Share</p>
-          <button
-            type="button"
-            onClick={() => void nativeShare()}
-            className="flex h-10 w-full items-center gap-3 rounded-sm px-2 text-sm text-muted hover:bg-azure/10 hover:text-azure"
-          >
-            <Share2 className="size-4" />
-            Device share
-          </button>
+        <div
+          className={cn(
+            "absolute z-40 mb-1 w-56 rounded-md border border-border bg-surface p-1.5 shadow-xl",
+            "bottom-full",
+            align === "right" ? "right-0" : "left-0",
+          )}
+        >
+          <p className="px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
+            Share this brief
+          </p>
+          {canNative ? (
+            <button type="button" onClick={() => void nativeShare()} className={itemClass}>
+              <Share className="size-4" />
+              Share via…
+            </button>
+          ) : null}
           <a
             href={`https://twitter.com/intent/tweet?url=${encoded}&text=${text}`}
             target="_blank"
             rel="noreferrer"
-            className="flex h-10 items-center gap-3 rounded-sm px-2 text-sm text-muted hover:bg-azure/10 hover:text-azure"
+            className={itemClass}
           >
             <XMark />
             X
@@ -115,7 +145,7 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
             href={`https://t.me/share/url?url=${encoded}&text=${text}`}
             target="_blank"
             rel="noreferrer"
-            className="flex h-10 items-center gap-3 rounded-sm px-2 text-sm text-muted hover:bg-azure/10 hover:text-azure"
+            className={itemClass}
           >
             <TelegramMark />
             Telegram
@@ -124,7 +154,7 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
             href={`https://wa.me/?text=${text}%20${encoded}`}
             target="_blank"
             rel="noreferrer"
-            className="flex h-10 items-center gap-3 rounded-sm px-2 text-sm text-muted hover:bg-azure/10 hover:text-azure"
+            className={itemClass}
           >
             <WhatsAppMark />
             WhatsApp
@@ -133,7 +163,7 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
             href={`https://www.facebook.com/sharer/sharer.php?u=${encoded}`}
             target="_blank"
             rel="noreferrer"
-            className="flex h-10 items-center gap-3 rounded-sm px-2 text-sm text-muted hover:bg-azure/10 hover:text-azure"
+            className={itemClass}
           >
             <FacebookMark />
             Facebook
@@ -141,10 +171,7 @@ export function ShareBar({ title, path }: { title: string; path: string }) {
           <button
             type="button"
             onClick={() => void copyLink()}
-            className={cn(
-              "flex h-10 w-full items-center gap-3 rounded-sm px-2 text-sm hover:bg-azure/10 hover:text-azure",
-              copied ? "text-azure" : "text-muted",
-            )}
+            className={cn(itemClass, copied && "text-azure")}
           >
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
             {copied ? "Copied" : "Copy link"}
