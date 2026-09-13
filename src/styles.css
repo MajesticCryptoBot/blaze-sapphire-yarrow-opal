@@ -143,3 +143,51 @@
 .desk-strip::-webkit-scrollbar {
   display: none;
 }
+
+/* === SURGICAL MOBILE LIGHT-MODE FIX ===
+   The desktop Apple styling is intentionally untouched.
+   These overrides apply only to phone-sized viewports. */
+@media (max-width: 767px) {
+  html[data-theme="light"] header.sticky {
+    background-color: #f5f5f7 !important;
+    color: #1d1d1f;
+    border-bottom-color: #d2d2d7 !important;
+  }
+
+  html[data-theme="light"] header.sticky input {
+    background-color: #ffffff !important;
+    border-color: #d2d2d7 !important;
+    color: #1d1d1f !important;
+  }
+
+  html[data-theme="light"] header.sticky input::placeholder {
+    color: #86868b !important;
+  }
+
+  html[data-theme="light"] header.sticky [aria-label="Switch to dark mode"] {
+    color: #6e6e73 !important;
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] {
+    background-color: rgba(255, 255, 255, 0.98) !important;
+    color: #1d1d1f;
+    border-color: #d2d2d7 !important;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] .text-muted {
+    color: #6e6e73 !important;
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] .text-subtle {
+    color: #86868b !important;
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] .hover\\:bg-elevated:hover {
+    background-color: #f2f2f7 !important;
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] .border-border\\/70 {
+    border-color: #d2d2d7 !important;
+  }
+}
