@@ -141,7 +141,7 @@ export function SideBar() {
   return (
     <>
       <div className="hidden w-12 shrink-0 md:block" aria-hidden="true" />
-      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border/70 bg-bg/70 backdrop-blur-xl md:block">
+      <aside className="site-rail fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border/70 bg-bg/70 backdrop-blur-xl md:block">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -173,7 +173,7 @@ export function SideBar() {
           aria-label="Desk navigation"
           aria-hidden={!open}
           className={cn(
-            "absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r border-border/70 bg-surface/90 shadow-[var(--shadow-elevated)] backdrop-blur-2xl transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "site-drawer absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r border-border/70 bg-surface/90 shadow-[var(--shadow-elevated)] backdrop-blur-2xl transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >

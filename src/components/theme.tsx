@@ -20,10 +20,23 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function setMeta(name: string, content: string) {
+  let node = document.querySelector(`meta[name="${name}"]`);
+  if (!node) {
+    node = document.createElement("meta");
+    node.setAttribute("name", name);
+    document.head.appendChild(node);
+  }
+  node.setAttribute("content", content);
+}
+
 function applyTheme(theme: ThemeName) {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+  setMeta("theme-color", theme === "light" ? "#f5f5f7" : "#0b0b0d");
+  setMeta("color-scheme", theme);
+  setMeta("apple-mobile-web-app-status-bar-style", theme === "light" ? "default" : "black-translucent");
 }
 
 export function readStoredTheme(): ThemeName {
