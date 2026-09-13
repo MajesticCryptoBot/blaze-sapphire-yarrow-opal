@@ -63,7 +63,7 @@ export function HeaderMenuButton() {
       onClick={toggle}
       aria-label={open ? "Close desk navigation" : "Open desk navigation"}
       aria-expanded={open}
-      className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+      className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
     >
       {open ? <X className="size-5" /> : <Menu className="size-5" />}
     </button>
@@ -80,16 +80,16 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         const href = "params" in item && item.params ? `/${item.params.slug}` : item.to;
         const active = pathname === href;
         const className = cn(
-          "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
+          "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-[background-color,color] duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           active
-            ? "bg-azure/10 text-azure"
-            : "text-muted hover:bg-azure/10 hover:text-azure",
+            ? "bg-foreground/10 text-foreground"
+            : "text-muted hover:bg-foreground/5 hover:text-foreground",
         );
 
         if (item.to === "/") {
           return (
             <Link key={item.label} to="/" search={{ q: "" }} onClick={onNavigate} className={className}>
-              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
+              <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
               <span>{item.label}</span>
             </Link>
           );
@@ -98,7 +98,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         if (item.to === "/markets" || item.to === "/calendar") {
           return (
             <Link key={item.label} to={item.to} onClick={onNavigate} className={className}>
-              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
+              <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
               <span>{item.label}</span>
             </Link>
           );
@@ -112,7 +112,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={className}
           >
-            <Icon className="size-4 shrink-0" strokeWidth={1.7} />
+            <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
             <span>{item.label}</span>
           </Link>
         );
@@ -141,13 +141,13 @@ export function SideBar() {
   return (
     <>
       <div className="hidden w-12 shrink-0 md:block" aria-hidden="true" />
-      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border bg-bg md:block">
+      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border/70 bg-bg/70 backdrop-blur-xl md:block">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open desk navigation"
           aria-expanded={open}
-          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="size-5" />
         </button>
@@ -164,7 +164,7 @@ export function SideBar() {
           aria-label="Close desk navigation"
           onClick={() => setOpen(false)}
           className={cn(
-            "absolute inset-0 bg-bg/70 transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "absolute inset-0 bg-black/35 backdrop-blur-[2px] transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "opacity-100" : "opacity-0",
           )}
         />
@@ -173,14 +173,14 @@ export function SideBar() {
           aria-label="Desk navigation"
           aria-hidden={!open}
           className={cn(
-            "absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-border bg-surface shadow-2xl transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r border-border/70 bg-surface/90 shadow-[var(--shadow-elevated)] backdrop-blur-2xl transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div className="flex h-14 items-center justify-between border-b border-border px-4">
+          <div className="flex h-16 items-center justify-between border-b border-border/70 px-4">
             <div>
-              <p className="font-display text-lg leading-none">ASP</p>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+              <p className="text-lg font-semibold leading-none tracking-tight">ASP</p>
+              <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-subtle">
                 Desk
               </p>
             </div>
@@ -188,7 +188,7 @@ export function SideBar() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close desk navigation"
-              className="flex size-11 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="size-4" />
             </button>
@@ -198,7 +198,7 @@ export function SideBar() {
             <NavLinks onNavigate={() => setOpen(false)} />
           </div>
 
-          <div className="border-t border-border px-4 py-4">
+          <div className="border-t border-border/70 px-4 py-4">
             <SocialIconRow />
           </div>
         </aside>

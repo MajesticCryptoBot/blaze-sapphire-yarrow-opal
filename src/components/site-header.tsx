@@ -17,21 +17,21 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg">
-      <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5 md:pl-14">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/65">
+      <div className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 md:pl-14">
         <HeaderMenuButton />
 
-        <Link to="/" search={{ q: "" }} className="flex min-h-11 min-w-0 items-center gap-3">
+        <Link to="/" search={{ q: "" }} className="flex min-h-11 min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <img
             src="/asplogo.jpg"
             alt="ASP News"
             className="size-9 shrink-0 rounded-full object-cover"
           />
           <span className="leading-tight">
-            <span className="block font-display text-[17px] font-medium tracking-tight text-foreground">
+            <span className="block text-[17px] font-semibold tracking-[-0.01em] text-foreground">
               ASP News
             </span>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted sm:block">
+            <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted sm:block">
               Market intelligence
             </span>
           </span>
@@ -43,9 +43,9 @@ export function SiteHeader() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search desk"
+              placeholder="Search"
               aria-label="Search articles, markets, and desk sections"
-              className="h-11 w-full rounded-md border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-subtle transition-[border-color,box-shadow] duration-[var(--motion-quick)] focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-11 w-full rounded-xl border border-border/80 bg-surface/80 pl-9 pr-3 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-[var(--motion-quick)] placeholder:text-subtle focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </label>
         </form>

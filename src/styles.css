@@ -1,37 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #09090b;
-  --color-surface: #121214;
-  --color-elevated: #1a1a1e;
-  --color-foreground: #f4f4f5;
-  --color-muted: #a1a1aa;
-  --color-subtle: #71717a;
-  --color-border: #26262b;
-  --color-primary: #e4e4e7;
-  --color-primary-foreground: #09090b;
-  --color-ring: #c8ccd4;
-  --color-signal: #c45c4a;
-  --color-signal-foreground: #fff7f5;
-  --color-warn: #c4a35a;
-  --color-info: #8a9bb0;
-  --color-up: #6aa84f;
-  --color-down: #c45c4a;
-  --color-azure: #7eb8ce;
+  --color-bg: #0b0b0d;
+  --color-surface: #151517;
+  --color-elevated: #1c1c1f;
+  --color-foreground: #f5f5f7;
+  --color-muted: #a1a1a6;
+  --color-subtle: #6e6e73;
+  --color-border: #2c2c2e;
+  --color-primary: #f5f5f7;
+  --color-primary-foreground: #0b0b0d;
+  --color-ring: #8e8e93;
+  --color-signal: #ff453a;
+  --color-signal-foreground: #fff;
+  --color-warn: #ffd60a;
+  --color-info: #64d2ff;
+  --color-up: #30d158;
+  --color-down: #ff453a;
+  --color-azure: #64d2ff;
 
-  --font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif;
-  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-news: "Source Serif 4", Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font-news: "New York", "Iowan Old Style", "Source Serif 4", Georgia, serif;
 
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-quick: 150ms;
-  --motion-fast: 250ms;
+  --motion-fast: 220ms;
+
+  --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-border-hover: 0 0 0 1px rgba(255, 255, 255, 0.13);
+  --shadow-elevated: 0 14px 40px rgba(0, 0, 0, 0.28);
 }
 
 @layer base {
@@ -45,23 +50,26 @@
     color-scheme: only light;
     -webkit-font-smoothing: auto;
     -moz-osx-font-smoothing: auto;
-    --color-bg: #f4f3ef;
-    --color-surface: #fffcf7;
-    --color-elevated: #eceae4;
-    --color-foreground: #171614;
-    --color-muted: #3f3e3a;
-    --color-subtle: #5c5b56;
-    --color-border: #d4d2cb;
-    --color-primary: #171614;
-    --color-primary-foreground: #f4f3ef;
-    --color-ring: #171614;
-    --color-signal: #b42318;
-    --color-signal-foreground: #fff7f5;
-    --color-warn: #9a7420;
-    --color-info: #4d5c70;
-    --color-up: #2f7d32;
-    --color-down: #b42318;
-    --color-azure: #1a6d88;
+    --color-bg: #f5f5f7;
+    --color-surface: #ffffff;
+    --color-elevated: #f2f2f7;
+    --color-foreground: #1d1d1f;
+    --color-muted: #6e6e73;
+    --color-subtle: #86868b;
+    --color-border: #d2d2d7;
+    --color-primary: #1d1d1f;
+    --color-primary-foreground: #ffffff;
+    --color-ring: #0071e3;
+    --color-signal: #d70015;
+    --color-signal-foreground: #ffffff;
+    --color-warn: #9a6700;
+    --color-info: #0071e3;
+    --color-up: #248a3d;
+    --color-down: #d70015;
+    --color-azure: #0071e3;
+    --shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-border-hover: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(0, 0, 0, 0.07);
+    --shadow-elevated: 0 14px 40px rgba(0, 0, 0, 0.12);
   }
 
   html[data-theme="light"].antialiased {
@@ -87,8 +95,8 @@
   h3 {
     text-wrap: balance;
     font-family: var(--font-display);
-    letter-spacing: -0.03em;
-    line-height: 1.15;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
   }
 
   p {
@@ -98,6 +106,15 @@
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  img {
+    outline: 1px solid rgba(255, 255, 255, 0.08);
+    outline-offset: -1px;
+  }
+
+  html[data-theme="light"] img {
+    outline-color: rgba(0, 0, 0, 0.08);
   }
 }
 
