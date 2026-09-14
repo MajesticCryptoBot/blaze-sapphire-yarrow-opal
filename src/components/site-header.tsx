@@ -5,6 +5,7 @@ import { HeaderMenuButton } from "@/components/site-nav";
 import { DeskStrip } from "@/components/desk-strip";
 import { ThemeToggle } from "@/components/theme";
 import { WorldClocks } from "@/components/world-clocks";
+import { LanguageToggle } from "@/lib/language";
 
 export function SiteHeader() {
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ export function SiteHeader() {
           </label>
         </form>
 
+        <LanguageToggle />
         <ThemeToggle />
       </div>
       <DeskStrip />
