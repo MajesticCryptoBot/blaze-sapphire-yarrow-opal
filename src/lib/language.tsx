@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 export type Language = "en" | "fr";
 
@@ -12,6 +12,9 @@ const FR: Record<string, string> = {
   "Switch to light mode": "Passer au mode clair",
   "Wire": "Fil d'actualité",
   "Markets": "Marchés",
+  "Bitcoin": "Bitcoin",
+  "Ethereum": "Ethereum",
+  "Solana": "Solana",
   "Regulation": "Régulation",
   "Videos": "Vidéos",
   "A–Z Glossary": "Glossaire A–Z",
@@ -73,27 +76,49 @@ const FR: Record<string, string> = {
   "Copy link": "Copier le lien",
   "Original source": "Source originale",
   "View on Telegram →": "Voir sur Telegram →",
-};
-
-const SECTION_FR: Record<string, Partial<Record<"label" | "kicker" | "headline" | "dek", string>>> = {
-  news: { label: "Actualités", kicker: "Rédaction", headline: "Actualités", dek: "Tout le fil ASP — chaque analyse, photo et vidéo dès son arrivée sur la plateforme." },
-  crypto: { kicker: "Rubrique crypto", headline: "Crypto", dek: "Bitcoin, ether, altcoins, ETF, baleines et actualité des actifs numériques." },
-  tech: { kicker: "Rubrique tech", headline: "Tech", dek: "Apple, Microsoft, Nvidia et l'actualité des grandes entreprises technologiques." },
-  ai: { kicker: "Rubrique IA", headline: "IA", dek: "Modèles, laboratoires et nouvelles fonctionnalités d'intelligence artificielle." },
-  stocks: { kicker: "Rubrique actions", headline: "Actions", dek: "Résultats, introductions, indices et marchés actions — hors tokens crypto." },
-  innovation: { kicker: "Notes de laboratoire", headline: "Innovation", dek: "Idées d'avenir, prototypes et avancées majeures — au-delà de l'actualité produit courante." },
-  bitcoin: { kicker: "Rubrique Bitcoin", headline: "Bitcoin", dek: "BTC, flux des ETF, mineurs, trésoreries et débat monétaire autour de Bitcoin." },
-  ethereum: { kicker: "Rubrique Ethereum", headline: "Ethereum", dek: "Ether, écosystème L2, staking et structure du marché Ethereum." },
-  solana: { kicker: "Rubrique Solana", headline: "Solana", dek: "SOL, applications Solana, validateurs et événements du réseau." },
-  xrp: { kicker: "Rubrique XRP", headline: "XRP", dek: "Ripple, liquidité XRP et actualité juridique autour du token." },
-  regulation: { kicker: "Rubrique politique", headline: "Régulation", dek: "SEC, CFTC, ETF, procès et règles de structure de marché." },
-  altcoins: { kicker: "Rubrique altcoins", headline: "Altcoins", dek: "Ethereum, Solana, XRP et le reste du marché hors Bitcoin." },
-  us: { kicker: "États-Unis", headline: "États-Unis", dek: "Fed, Trésor, Washington et données macro américaines qui font bouger les actifs risqués." },
-  international: { kicker: "Rubrique monde", headline: "International", dek: "Actualités hors États-Unis — Europe, Asie et reste du monde." },
-  china: { kicker: "Rubrique Chine", headline: "Chine", dek: "Politique de Pékin, marchés chinois et corridor Chine-crypto." },
-  russia: { kicker: "Rubrique Russie", headline: "Russie", dek: "Moscou, rouble et actualité des marchés et de la crypto liés à la Russie." },
-  "fun-facts": { label: "Infos insolites", kicker: "Carnet", headline: "Infos insolites", dek: "Courtes notes sourcées sur Bitcoin et l'histoire de la crypto — pas de signaux de trading." },
-  videos: { kicker: "Rubrique vidéo", headline: "Vidéos", dek: "Toutes les actualités du fil accompagnées d'une vidéo." },
+  "News": "Actualités",
+  "Newsroom": "Rédaction",
+  "The full ASP tape — every brief, photo, and video as it hits the desk.": "Tout le fil ASP — chaque analyse, photo et vidéo dès son arrivée sur la plateforme.",
+  "Crypto desk": "Rubrique crypto",
+  "Bitcoin, ether, alts, ETFs, whales, and the digital-asset tape.": "Bitcoin, ether, altcoins, ETF, baleines et actualité des actifs numériques.",
+  "Tech desk": "Rubrique tech",
+  "Apple, Microsoft, Nvidia, and the rest of big-tech corporate tape.": "Apple, Microsoft, Nvidia et l'actualité des grandes entreprises technologiques.",
+  "AI desk": "Rubrique IA",
+  "Models, labs, and new artificial-intelligence features as they ship.": "Modèles, laboratoires et nouvelles fonctionnalités d'intelligence artificielle.",
+  "Stocks": "Actions",
+  "Equities desk": "Rubrique actions",
+  "Earnings, listings, indexes, and the cash equity tape — not crypto tokens.": "Résultats, introductions, indices et marchés actions — hors tokens crypto.",
+  "Lab notes": "Notes de laboratoire",
+  "Future ideas, prototypes, and breakthroughs — not routine product news.": "Idées d'avenir, prototypes et avancées majeures — au-delà de l'actualité produit courante.",
+  "Bitcoin desk": "Rubrique Bitcoin",
+  "BTC, ETF flows, miners, treasuries, and the monetary debate around Bitcoin.": "BTC, flux des ETF, mineurs, trésoreries et débat monétaire autour de Bitcoin.",
+  "Ethereum desk": "Rubrique Ethereum",
+  "Ether, the L2 stack, staking, and Ethereum market structure.": "Ether, écosystème L2, staking et structure du marché Ethereum.",
+  "Solana desk": "Rubrique Solana",
+  "SOL, Solana apps, validators, and network events.": "SOL, applications Solana, validateurs et événements du réseau.",
+  "XRP desk": "Rubrique XRP",
+  "Ripple, XRP liquidity, and the legal tape around the token.": "Ripple, liquidité XRP et actualité juridique autour du token.",
+  "Policy desk": "Rubrique politique",
+  "SEC, CFTC, ETFs, lawsuits, and market-structure rules.": "SEC, CFTC, ETF, procès et règles de structure de marché.",
+  "Altcoins": "Altcoins",
+  "Altcoin desk": "Rubrique altcoins",
+  "Ethereum, Solana, XRP, and the rest of the tape outside Bitcoin.": "Ethereum, Solana, XRP et le reste du marché hors Bitcoin.",
+  "United States": "États-Unis",
+  "The Fed, Treasury, Washington, and U.S. macro that moves risk assets.": "Fed, Trésor, Washington et données macro américaines qui font bouger les actifs risqués.",
+  "World desk": "Rubrique monde",
+  "Non-U.S. briefs from the tape — Europe, Asia, and the rest of the world.": "Actualités hors États-Unis — Europe, Asie et reste du monde.",
+  "China desk": "Rubrique Chine",
+  "Beijing policy, Chinese markets, and the China-crypto corridor.": "Politique de Pékin, marchés chinois et corridor Chine-crypto.",
+  "Russia desk": "Rubrique Russie",
+  "Moscow, the ruble, and Russia-related market and crypto briefs.": "Moscou, rouble et actualité des marchés et de la crypto liés à la Russie.",
+  "Fun Facts": "Infos insolites",
+  "Notebook": "Carnet",
+  "Fun facts": "Infos insolites",
+  "Short, sourced notes on Bitcoin and crypto history — not trading calls.": "Courtes notes sourcées sur Bitcoin et l'histoire de la crypto — pas de signaux de trading.",
+  "Video desk": "Rubrique vidéo",
+  "Every brief on the tape that arrived with video.": "Toutes les actualités du fil accompagnées d'une vidéo.",
+  "Passer au français": "Passer au français",
+  "Switch to English": "Passer à l'anglais",
 };
 
 type LanguageContextValue = {
@@ -102,18 +127,6 @@ type LanguageContextValue = {
 };
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
-
-function translateText(value: string, language: Language) {
-  if (language === "en") return value;
-  const direct = FR[value];
-  if (direct) return direct;
-  const sectionMatch = Object.values(SECTION_FR).find((section) => Object.values(section).includes(value));
-  if (sectionMatch) {
-    const entry = Object.entries(sectionMatch).find(([, text]) => text === value);
-    if (entry) return entry[1];
-  }
-  return value;
-}
 
 function applyLanguage(language: Language) {
   document.documentElement.lang = language;
@@ -129,52 +142,93 @@ export function readStoredLanguage(): Language {
 }
 
 export function translatedSection(slug: string, field: "label" | "kicker" | "headline" | "dek", value: string) {
-  if (field === "label" && slug === "news") return "Actualités";
-  return SECTION_FR[slug]?.[field] ?? value;
+  const map: Record<string, Partial<Record<typeof field, string>>> = {
+    news: { label: "Actualités", kicker: "Rédaction", headline: "Actualités", dek: "Tout le fil ASP — chaque analyse, photo et vidéo dès son arrivée sur la plateforme." },
+    crypto: { kicker: "Rubrique crypto", headline: "Crypto", dek: "Bitcoin, ether, altcoins, ETF, baleines et actualité des actifs numériques." },
+    tech: { kicker: "Rubrique tech", headline: "Tech", dek: "Apple, Microsoft, Nvidia et l'actualité des grandes entreprises technologiques." },
+    ai: { kicker: "Rubrique IA", headline: "IA", dek: "Modèles, laboratoires et nouvelles fonctionnalités d'intelligence artificielle." },
+    stocks: { label: "Actions", kicker: "Rubrique actions", headline: "Actions", dek: "Résultats, introductions, indices et marchés actions — hors tokens crypto." },
+    innovation: { kicker: "Notes de laboratoire", headline: "Innovation", dek: "Idées d'avenir, prototypes et avancées majeures — au-delà de l'actualité produit courante." },
+    bitcoin: { kicker: "Rubrique Bitcoin", headline: "Bitcoin", dek: "BTC, flux des ETF, mineurs, trésoreries et débat monétaire autour de Bitcoin." },
+    ethereum: { kicker: "Rubrique Ethereum", headline: "Ethereum", dek: "Ether, écosystème L2, staking et structure du marché Ethereum." },
+    solana: { kicker: "Rubrique Solana", headline: "Solana", dek: "SOL, applications Solana, validateurs et événements du réseau." },
+    xrp: { kicker: "Rubrique XRP", headline: "XRP", dek: "Ripple, liquidité XRP et actualité juridique autour du token." },
+    regulation: { label: "Régulation", kicker: "Rubrique politique", headline: "Régulation", dek: "SEC, CFTC, ETF, procès et règles de structure de marché." },
+    altcoins: { label: "Altcoins", kicker: "Rubrique altcoins", headline: "Altcoins", dek: "Ethereum, Solana, XRP et le reste du marché hors Bitcoin." },
+    us: { label: "États-Unis", kicker: "États-Unis", headline: "États-Unis", dek: "Fed, Trésor, Washington et données macro américaines qui font bouger les actifs risqués." },
+    international: { kicker: "Rubrique monde", headline: "International", dek: "Actualités hors États-Unis — Europe, Asie et reste du monde." },
+    china: { kicker: "Rubrique Chine", headline: "Chine", dek: "Politique de Pékin, marchés chinois et corridor Chine-crypto." },
+    russia: { kicker: "Rubrique Russie", headline: "Russie", dek: "Moscou, rouble et actualité des marchés et de la crypto liés à la Russie." },
+    "fun-facts": { label: "Infos insolites", kicker: "Carnet", headline: "Infos insolites", dek: "Courtes notes sourcées sur Bitcoin et l'histoire de la crypto — pas de signaux de trading." },
+    videos: { label: "Vidéos", kicker: "Rubrique vidéo", headline: "Vidéos", dek: "Toutes les actualités du fil accompagnées d'une vidéo." },
+  };
+  return map[slug]?.[field] ?? value;
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
+  const languageRef = useRef<Language>("en");
+  const translating = useRef(false);
+  const originalText = useRef(new WeakMap<Text, string>());
+  const originalAttributes = useRef(new WeakMap<HTMLElement, Map<string, string>>());
 
   const setLanguage = useCallback((next: Language) => {
+    languageRef.current = next;
     setLanguageState(next);
     try { localStorage.setItem(STORAGE_KEY, next); } catch { /* Ignore blocked storage. */ }
     applyLanguage(next);
+    window.requestAnimationFrame(() => window.dispatchEvent(new Event("asp-language-change")));
   }, []);
 
   useEffect(() => {
     const next = readStoredLanguage();
+    languageRef.current = next;
     setLanguageState(next);
     applyLanguage(next);
 
     const translate = () => {
-      if (languageRef.current === "en") return;
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      let node: Node | null;
-      while ((node = walker.nextNode())) {
-        const text = node.nodeValue ?? "";
-        const trimmed = text.trim();
-        if (!trimmed || !FR[trimmed]) continue;
-        node.nodeValue = text.replace(trimmed, FR[trimmed]);
-      }
-      document.querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title]").forEach((el) => {
-        for (const attr of ["placeholder", "aria-label", "title"]) {
-          const value = el.getAttribute(attr);
-          if (value && FR[value]) el.setAttribute(attr, FR[value]);
+      if (translating.current) return;
+      translating.current = true;
+      try {
+        const language = languageRef.current;
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node: Node | null;
+        while ((node = walker.nextNode())) {
+          const textNode = node as Text;
+          const parent = textNode.parentElement;
+          if (!parent || ["SCRIPT", "STYLE", "NOSCRIPT"].includes(parent.tagName)) continue;
+          const current = textNode.nodeValue ?? "";
+          if (!originalText.current.has(textNode)) originalText.current.set(textNode, current);
+          const original = originalText.current.get(textNode) ?? current;
+          const trimmed = original.trim();
+          if (!trimmed) continue;
+          const translated = language === "fr" ? FR[trimmed] : undefined;
+          textNode.nodeValue = current.replace(current.trim(), translated ?? trimmed);
         }
-      });
+
+        document.querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title]").forEach((el) => {
+          let attrs = originalAttributes.current.get(el);
+          if (!attrs) {
+            attrs = new Map();
+            originalAttributes.current.set(el, attrs);
+          }
+          for (const attr of ["placeholder", "aria-label", "title"]) {
+            const current = el.getAttribute(attr);
+            if (current !== null && !attrs.has(attr)) attrs.set(attr, current);
+            const original = attrs.get(attr);
+            if (original !== undefined) el.setAttribute(attr, language === "fr" ? FR[original] ?? original : original);
+          }
+        });
+      } finally {
+        translating.current = false;
+      }
     };
 
-    const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(translate);
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    const observer = new MutationObserver(() => window.requestAnimationFrame(translate));
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "aria-label", "title"] });
     window.requestAnimationFrame(translate);
     return () => observer.disconnect();
   }, []);
-
-  const languageRef = useMemo(() => ({ current: language }), [language]);
-  useEffect(() => { languageRef.current = language; }, [languageRef, language]);
 
   const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
