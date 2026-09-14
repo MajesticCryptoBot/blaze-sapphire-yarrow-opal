@@ -53,8 +53,6 @@ const FR: Record<string, string> = {
   "Loading the week ahead…": "Chargement de la semaine à venir…",
   "The calendar is temporarily unavailable.": "Le calendrier est temporairement indisponible.",
   "No major prints remain on this week’s tape.": "Aucune publication majeure ne reste au programme cette semaine.",
-  "fcast": "prévision",
-  "prev": "précédent",
   "Crypto & Financial Glossary": "Glossaire crypto et financier",
   "Search a financial or crypto term…": "Rechercher un terme financier ou crypto…",
   "Search the financial and crypto glossary": "Rechercher dans le glossaire financier et crypto",
@@ -121,11 +119,7 @@ const FR: Record<string, string> = {
   "Switch to English": "Passer à l'anglais",
 };
 
-type LanguageContextValue = {
-  language: Language;
-  setLanguage: (language: Language) => void;
-};
-
+type LanguageContextValue = { language: Language; setLanguage: (language: Language) => void };
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 function applyLanguage(language: Language) {
@@ -134,11 +128,7 @@ function applyLanguage(language: Language) {
 }
 
 export function readStoredLanguage(): Language {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "fr" ? "fr" : "en";
-  } catch {
-    return "en";
-  }
+  try { return localStorage.getItem(STORAGE_KEY) === "fr" ? "fr" : "en"; } catch { return "en"; }
 }
 
 export function translatedSection(slug: string, field: "label" | "kicker" | "headline" | "dek", value: string) {
@@ -177,7 +167,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLanguageState(next);
     try { localStorage.setItem(STORAGE_KEY, next); } catch { /* Ignore blocked storage. */ }
     applyLanguage(next);
-    window.requestAnimationFrame(() => window.dispatchEvent(new Event("asp-language-change")));
   }, []);
 
   useEffect(() => {
@@ -202,16 +191,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           const original = originalText.current.get(textNode) ?? current;
           const trimmed = original.trim();
           if (!trimmed) continue;
-          const translated = language === "fr" ? FR[trimmed] : undefined;
-          textNode.nodeValue = current.replace(current.trim(), translated ?? trimmed);
+          const translated = language === "fr" ? FR[trimmed] ?? trimmed : trimmed;
+          textNode.nodeValue = current.replace(current.trim(), translated);
         }
 
         document.querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title]").forEach((el) => {
           let attrs = originalAttributes.current.get(el);
-          if (!attrs) {
-            attrs = new Map();
-            originalAttributes.current.set(el, attrs);
-          }
+          if (!attrs) { attrs = new Map(); originalAttributes.current.set(el, attrs); }
           for (const attr of ["placeholder", "aria-label", "title"]) {
             const current = el.getAttribute(attr);
             if (current !== null && !attrs.has(attr)) attrs.set(attr, current);
@@ -219,9 +205,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             if (original !== undefined) el.setAttribute(attr, language === "fr" ? FR[original] ?? original : original);
           }
         });
-      } finally {
-        translating.current = false;
-      }
+      } finally { translating.current = false; }
     };
 
     const observer = new MutationObserver(() => window.requestAnimationFrame(translate));
