@@ -31,7 +31,7 @@ export function SiteHeader() {
           <span className="leading-tight">
             <span className="block text-[17px] font-semibold tracking-[-0.01em] text-foreground">
               ASP News
-            </span>
+n            </span>
             <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted sm:block">
               Market intelligence
             </span>
