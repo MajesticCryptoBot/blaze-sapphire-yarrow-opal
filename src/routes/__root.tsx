@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { ThemeProvider } from "@/components/theme";
 import { TickerBar } from "@/components/ticker-bar";
+import { LanguageProvider } from "@/lib/language";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "ASP News";
@@ -53,20 +54,22 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
-            <SiteNavProvider>
-              <div className="flex min-h-dvh flex-col">
-                <SiteHeader />
-                <TickerBar />
-                <div className="flex min-h-0 flex-1">
-                  <SideBar />
-                  <div className="min-w-0 flex-1">
-                    <Outlet />
-                    <SiteFooter />
-                    <ScrollToTop />
+            <LanguageProvider>
+              <SiteNavProvider>
+                <div className="flex min-h-dvh flex-col">
+                  <SiteHeader />
+                  <TickerBar />
+                  <div className="flex min-h-0 flex-1">
+                    <SideBar />
+                    <div className="min-w-0 flex-1">
+                      <Outlet />
+                      <SiteFooter />
+                      <ScrollToTop />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SiteNavProvider>
+              </SiteNavProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </AuthProvider>
         <Scripts />
