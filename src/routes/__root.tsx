@@ -7,7 +7,6 @@ import { SiteHeader } from "@/components/site-header";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { ThemeProvider } from "@/components/theme";
 import { TickerBar } from "@/components/ticker-bar";
-import { LanguageProvider } from "@/lib/language";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "ASP News";
@@ -23,9 +22,8 @@ export const Route = createRootRoute({
         content:
           "ASP News — live market intelligence for crypto, macro, and AI.",
       },
-      { name: "theme-color", content: "#0b0b0d" },
-      { name: "color-scheme", content: "dark" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "theme-color", content: "#09090b" },
+      { name: "color-scheme", content: "dark light" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -46,7 +44,7 @@ export const Route = createRootRoute({
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t!=="light"&&t!=="dark")t="dark";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;var c=t==="light"?"#f5f5f7":"#0b0b0d";var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c);var s=document.querySelector('meta[name="color-scheme"]');if(s)s.setAttribute("content",t);var a=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');if(a)a.setAttribute("content",t==="light"?"default":"black-translucent");}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
           }}
         />
       </head>
@@ -54,22 +52,20 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
-            <LanguageProvider>
-              <SiteNavProvider>
-                <div className="flex min-h-dvh flex-col">
-                  <SiteHeader />
-                  <TickerBar />
-                  <div className="flex min-h-0 flex-1">
-                    <SideBar />
-                    <div className="min-w-0 flex-1">
-                      <Outlet />
-                      <SiteFooter />
-                      <ScrollToTop />
-                    </div>
+            <SiteNavProvider>
+              <div className="flex min-h-dvh flex-col">
+                <SiteHeader />
+                <TickerBar />
+                <div className="flex min-h-0 flex-1">
+                  <SideBar />
+                  <div className="min-w-0 flex-1">
+                    <Outlet />
+                    <SiteFooter />
+                    <ScrollToTop />
                   </div>
                 </div>
-              </SiteNavProvider>
-            </LanguageProvider>
+              </div>
+            </SiteNavProvider>
           </ThemeProvider>
         </AuthProvider>
         <Scripts />
