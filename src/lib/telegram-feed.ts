@@ -8,6 +8,7 @@ const CHANNEL_KEY = "alphasignalspro";
 export type TelegramPost = {
   id: number;
   text: string;
+  frText: string | null;
   publishedAt: string;
   hasPhoto: boolean;
   hasPhoto2: boolean;
@@ -20,6 +21,7 @@ export type TelegramPost = {
 type PostRow = {
   message_id: number | string;
   text: string;
+  fr_text?: string | null;
   published_at: string;
   message_url: string | null;
   has_photo: number | boolean;
@@ -33,6 +35,7 @@ function mapRow(row: PostRow): TelegramPost {
   return {
     id: Number(row.message_id),
     text: row.text,
+    frText: row.fr_text ?? null,
     publishedAt: new Date(row.published_at).toISOString(),
     hasPhoto: Boolean(row.has_photo),
     hasPhoto2: Boolean(row.has_photo_2),
@@ -133,7 +136,7 @@ export function splitHeadline(text: string) {
 export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url,
+    `select message_id, text, fr_text, published_at, message_url,
             case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
             case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
             case when video_data is not null or video_url is not null then 1 else 0 end as has_video,
@@ -151,7 +154,7 @@ export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
 export async function getTelegramPost(id: number): Promise<TelegramPost | null> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select message_id, text, published_at, message_url,
+    `select message_id, text, fr_text, published_at, message_url,
             case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
             case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
             case when video_data is not null or video_url is not null then 1 else 0 end as has_video,

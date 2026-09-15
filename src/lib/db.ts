@@ -64,9 +64,6 @@ async function createTursoSql(): Promise<Sql> {
     const client = createClient({ url: tursoUrl, authToken: tursoToken });
     globalRef.__tursoClient__ = client;
 
-    // SQLite schema used by the production Turso database. This is intentionally
-    // idempotent so an existing database is left untouched except for additive
-    // media metadata columns required by the Telegram publishing features.
     globalRef.__tursoSchemaPromise__ ??= (async () => {
       await client.batch([
         { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, photo_data_2 BLOB, photo_mime_type_2 TEXT, video_data BLOB, video_mime_type TEXT, video_url TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
@@ -82,6 +79,7 @@ async function createTursoSql(): Promise<Sql> {
       if (!names.has("video_data")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_data BLOB" });
       if (!names.has("video_mime_type")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_mime_type TEXT" });
       if (!names.has("video_url")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_url TEXT" });
+      if (!names.has("fr_text")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN fr_text TEXT" });
       if (additions.length) await client.batch(additions, "write");
     })();
     await globalRef.__tursoSchemaPromise__;

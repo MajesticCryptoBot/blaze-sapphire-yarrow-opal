@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
+import { translateAndStoreNews, translatePendingNews } from "@/lib/groq-translation";
 
-// Production diagnostic marker. This lets us prove which source is serving
-// /api/news-ingest instead of relying on a generic HTTP status.
-const INGEST_VERSION = "ASP-INGEST-V8-20260831";
+const INGEST_VERSION = "ASP-INGEST-V9-GROQ-FR-20260915";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 
@@ -41,6 +40,8 @@ export const Route = createFileRoute("/api/news-ingest")({
         }
 
         let body: {
+          backfill?: boolean;
+          limit?: number;
           messageId?: number | string;
           text?: string;
           publishedAt?: string;
@@ -54,6 +55,16 @@ export const Route = createFileRoute("/api/news-ingest")({
           body = await request.json();
         } catch {
           return response({ error: "Invalid JSON", version: INGEST_VERSION }, 400);
+        }
+
+        if (body.backfill === true) {
+          try {
+            const result = await translatePendingNews(body.limit ?? 5);
+            return response({ ok: true, mode: "backfill", version: INGEST_VERSION, model: "openai/gpt-oss-120b", ...result });
+          } catch (error) {
+            console.error("[groq] backfill failed:", error);
+            return response({ ok: false, mode: "backfill", version: INGEST_VERSION, error: error instanceof Error ? error.message : "Translation failed" }, 500);
+          }
         }
 
         const messageId = Number(body.messageId);
@@ -77,21 +88,19 @@ export const Route = createFileRoute("/api/news-ingest")({
         const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
         const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
 
-        // The authenticated publisher is permanently associated with
-        // AlphaSignalsPro. The caller-supplied channel is diagnostic only.
         const channel = CANONICAL_CHANNEL;
-
         const sql = await getSql();
         await sql.query(
           `insert into telegram_posts
-             (chat_id, message_id, chat_username, chat_title, text, published_at, photo_data, photo_mime_type, message_url, updated_at)
-           values ($1, $2, $3, $3, $4, $5::timestamptz, $6::bytea, $7::text, $8::text, now())
+             (chat_id, message_id, chat_username, chat_title, text, published_at, photo_data, photo_mime_type, message_url, fr_text, updated_at)
+           values ($1, $2, $3, $3, $4, $5::timestamptz, $6::bytea, $7::text, $8::text, null, now())
            on conflict (chat_id, message_id) do update set
              text = excluded.text,
              published_at = excluded.published_at,
              photo_data = coalesce(excluded.photo_data, telegram_posts.photo_data),
              photo_mime_type = coalesce(excluded.photo_mime_type, telegram_posts.photo_mime_type),
              message_url = excluded.message_url,
+             fr_text = null,
              updated_at = now()`,
           [
             `@${channel}`,
@@ -105,12 +114,21 @@ export const Route = createFileRoute("/api/news-ingest")({
           ],
         );
 
+        let frenchTranslation = false;
+        try {
+          await translateAndStoreNews(messageId, text);
+          frenchTranslation = true;
+        } catch (error) {
+          console.error(`[groq] ingest translation failed for ${messageId}:`, error instanceof Error ? error.message : error);
+        }
+
         return response({
           ok: true,
           messageId,
           version: INGEST_VERSION,
           channel: CANONICAL_CHANNEL,
           receivedChannel,
+          frenchTranslation,
         });
       },
     },
