@@ -17,16 +17,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="relative sticky top-0 z-40 border-b border-border/70 bg-bg">
-      {/*
-        Safari 26 samples the sticky/fixed element's solid background for
-        browser chrome tinting. backdrop-filter on the SAME element blocks
-        sampling and leaves the top dark. Glass lives on this inner layer.
-      */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-bg/80 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-bg/65"
-      />
+    <header className="glass-header glass-border relative sticky top-0 z-40 border-b">
       <div className="relative">
         <div className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 md:pl-14">
           <HeaderMenuButton />
@@ -62,7 +53,7 @@ export function SiteHeader() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search"
                 aria-label="Search articles, markets, and desk sections"
-                className="h-11 w-full rounded-xl border border-border/80 bg-surface/80 pl-9 pr-3 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-[var(--motion-quick)] placeholder:text-subtle focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-11 w-full rounded-xl border border-border bg-surface pl-9 pr-3 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-[var(--motion-quick)] placeholder:text-subtle focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
           </form>
