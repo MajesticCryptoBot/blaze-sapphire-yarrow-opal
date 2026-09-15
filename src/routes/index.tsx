@@ -115,7 +115,19 @@ function Home() {
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {CATEGORIES.map((c) => (
-            <button key={c} type="button" onClick={() => setCat(c)} className={cn("h-11 shrink-0 rounded-full border px-4 text-xs font-semibold transition-[background-color,border-color,color] duration-[var(--motion-quick)]", cat === c ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted hover:border-ring/60 hover:text-foreground")}>{c}</button>
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCat(c)}
+              className={cn(
+                "h-11 shrink-0 rounded-full border px-4 text-xs font-semibold transition-[background-color,border-color,color] duration-[var(--motion-quick)]",
+                cat === c
+                  ? "border-azure bg-azure text-white"
+                  : "border-border text-muted hover:border-azure hover:bg-azure/10 hover:text-azure",
+              )}
+            >
+              {c}
+            </button>
           ))}
         </div>
       </div>
@@ -134,8 +146,20 @@ function Home() {
         <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em]">Built for the open tape</h2>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">Every story on this site is the same copy that hits the Alpha Signals Pro channel — expanded so you can read, share, and keep a permanent link. Nothing here is a trade recommendation.</p>
         <div className="mt-7 flex flex-wrap gap-3">
-          <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-[transform,opacity] duration-[var(--motion-quick)] hover:opacity-90 active:scale-[0.98]">Open Telegram</a>
-          <Link to="/markets" className="inline-flex h-11 items-center rounded-full border border-border px-5 text-sm font-medium text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground">View markets</Link>
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-[transform,opacity] duration-[var(--motion-quick)] hover:opacity-90 active:scale-[0.98]"
+          >
+            Open Telegram
+          </a>
+          <Link
+            to="/markets"
+            className="inline-flex h-11 items-center rounded-full border border-border px-5 text-sm font-medium text-muted transition-[background-color,border-color,color] duration-[var(--motion-quick)] hover:border-azure hover:bg-azure/10 hover:text-azure"
+          >
+            View markets
+          </Link>
         </div>
       </section>
     </main>
