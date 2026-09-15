@@ -122,11 +122,38 @@
    Desktop and iPhone dark mode remain unchanged.
    Only the mobile light-mode translucent chrome/panel is corrected. */
 @media (max-width: 767px) {
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
   html[data-theme="light"] header.sticky {
     background-color: rgba(255, 255, 255, 0.72) !important;
+    color: #1d1d1f !important;
     border-bottom-color: rgba(0, 0, 0, 0.08) !important;
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  html[data-theme="light"] header.sticky input {
+    background-color: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    color: #1d1d1f !important;
+  }
+
+  html[data-theme="light"] header.sticky input::placeholder {
+    color: #86868b !important;
+  }
+
+  html[data-theme="light"] header.sticky [aria-label="Switch to dark mode"] {
+    color: #6e6e73 !important;
+  }
+
+  html[data-theme="light"] header.sticky + div {
+    background-color: rgba(255, 255, 255, 0.68) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    color: #1d1d1f !important;
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
   }
 
   html[data-theme="light"] [aria-label="Desk navigation"] {
