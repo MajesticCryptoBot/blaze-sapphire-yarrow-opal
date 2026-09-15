@@ -22,8 +22,17 @@ export const Route = createRootRoute({
         content:
           "ASP News — live market intelligence for crypto, macro, and AI.",
       },
-      { name: "theme-color", content: "#09090b" },
-      { name: "color-scheme", content: "dark light" },
+      {
+        name: "theme-color",
+        content: "#f5f5f7",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        name: "theme-color",
+        content: "#0b0b0d",
+        media: "(prefers-color-scheme: dark)",
+      },
+      { name: "color-scheme", content: "light dark" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -44,7 +53,7 @@ export const Route = createRootRoute({
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;var m=document.querySelector('meta[name="theme-color"]');if(m&&window.matchMedia("(max-width: 767px)").matches)m.setAttribute("content",t==="light"?"#f5f5f7":"#0b0b0d");}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;var c=document.querySelector('meta[name="color-scheme"]');if(c)c.setAttribute("content",t);var ms=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<ms.length;i++){ms[i].setAttribute("content",t==="light"?"#f5f5f7":"#0b0b0d");}}}catch(e){}})();`,
           }}
         />
       </head>
