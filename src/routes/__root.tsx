@@ -44,7 +44,7 @@ export const Route = createRootRoute({
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;var m=document.querySelector('meta[name="theme-color"]');if(m&&window.matchMedia("(max-width: 767px)").matches)m.setAttribute("content",t==="light"?"#f5f5f7":"#0b0b0d");}}catch(e){}})();`,
           }}
         />
       </head>
