@@ -141,18 +141,13 @@ export function SideBar() {
   return (
     <>
       <div className="hidden w-12 shrink-0 md:block" aria-hidden="true" />
-      {/* Desktop rail: solid bg for Safari sampling, glass on inner */}
-      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border/70 bg-bg md:block">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-bg/70 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-bg/55"
-        />
+      <aside className="glass-rail glass-border fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r md:block">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open desk navigation"
           aria-expanded={open}
-          className="relative mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="size-5" />
         </button>
@@ -169,25 +164,20 @@ export function SideBar() {
           aria-label="Close desk navigation"
           onClick={() => setOpen(false)}
           className={cn(
-            "absolute inset-0 bg-black/35 backdrop-blur-[2px] transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "absolute inset-0 bg-black/35 transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "opacity-100" : "opacity-0",
           )}
         />
 
-        {/* Drawer: solid surface for light mode, glass on inner layer */}
         <aside
           aria-label="Desk navigation"
           aria-hidden={!open}
           className={cn(
-            "absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r border-border/70 bg-surface shadow-[var(--shadow-elevated)] transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "glass-drawer glass-border absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r shadow-[var(--shadow-elevated)] transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-surface/95 backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-surface/85"
-          />
-          <div className="relative flex h-16 items-center justify-between border-b border-border/70 px-4">
+          <div className="flex h-16 items-center justify-between border-b border-border px-4">
             <div>
               <p className="text-lg font-semibold leading-none tracking-tight">ASP</p>
               <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-subtle">
@@ -204,11 +194,11 @@ export function SideBar() {
             </button>
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <NavLinks onNavigate={() => setOpen(false)} />
           </div>
 
-          <div className="relative border-t border-border/70 px-4 py-4">
+          <div className="border-t border-border px-4 py-4">
             <SocialIconRow />
           </div>
         </aside>
