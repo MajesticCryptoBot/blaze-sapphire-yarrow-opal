@@ -15,6 +15,32 @@ function cleanTranslation(value: unknown): string | null {
   return text || null;
 }
 
+function restoreNewsAlertPrefix(source: string, translated: string): string {
+  const sourceFirstLine = source.split("\n", 1)[0]?.trim() ?? "";
+  const match = sourceFirstLine.match(/^(JUST IN|BREAKING|BREAKING NEWS|LIVE|UPDATE|DEVELOPING)\s*:/i);
+  if (!match) return translated;
+
+  const prefixMap: Record<string, string> = {
+    "JUST IN": "DERNIÈRE MINUTE",
+    "BREAKING": "DERNIÈRE MINUTE",
+    "BREAKING NEWS": "DERNIÈRE MINUTE",
+    LIVE: "EN DIRECT",
+    UPDATE: "MISE À JOUR",
+    DEVELOPING: "EN DÉVELOPPEMENT",
+  };
+
+  const expectedPrefix = prefixMap[match[1].toUpperCase()];
+  if (!expectedPrefix) return translated;
+
+  const translatedLines = translated.split("\n");
+  const translatedFirstLine = translatedLines[0]?.trim() ?? "";
+  const colonIndex = translatedFirstLine.indexOf(":");
+  if (colonIndex < 0) return translated;
+
+  translatedLines[0] = `${expectedPrefix}: ${translatedFirstLine.slice(colonIndex + 1).trim()}`;
+  return translatedLines.join("\n");
+}
+
 export async function translateNewsToFrench(text: string): Promise<string> {
   const source = text.trim();
   if (!source) return "";
@@ -33,7 +59,7 @@ export async function translateNewsToFrench(text: string): Promise<string> {
         {
           role: "system",
           content:
-            "You are the French-language editor for a serious financial news desk. Translate the supplied English news brief into natural, professional French. Preserve the exact meaning, facts, figures, percentages, dates, tickers, company names, product names, URLs, and proper nouns. Do not add context, commentary, explanations, or facts. Keep the same paragraph/line structure as the source. Do not translate ticker symbols, brand names, or proper names unless there is a standard French form. Return only JSON with one string field named text.",
+            "You are the French-language editor for a serious financial news desk. Translate the supplied English news brief into natural, professional French. This is a translation task, not a rewriting or summarization task. Preserve every fact exactly. Never invent, infer, expand, correct, or replace information that is not explicitly present in the source. In particular, never invent a person's first name, title, affiliation, location, company, token, number, date, or other detail. If the source says only a surname such as Bessent, keep only that surname. Preserve the exact figures, percentages, dates, currencies, tickers, URLs, company names, product names, token names, and proper nouns. Keep the same paragraph/line structure. Preserve headline alert labels semantically: JUST IN or BREAKING NEWS means DERNIÈRE MINUTE; LIVE means EN DIRECT; do not translate JUST IN as EN DIRECT. Do not add commentary or context. Return only JSON with one string field named text.",
         },
         {
           role: "user",
@@ -64,7 +90,7 @@ export async function translateNewsToFrench(text: string): Promise<string> {
 
   const translated = cleanTranslation((parsed as { text?: unknown })?.text);
   if (!translated) throw new Error("Groq translation returned empty text");
-  return translated;
+  return restoreNewsAlertPrefix(source, translated);
 }
 
 export async function translateAndStoreNews(messageId: number, text: string): Promise<string> {
