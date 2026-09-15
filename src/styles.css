@@ -118,6 +118,49 @@
   }
 }
 
+/*
+ * Glass surfaces that work on iOS 15+ (no color-mix).
+ * Tailwind v4's bg-*/80 uses color-mix() which Safari < 16.4 ignores,
+ * leaving sticky/fixed chrome dark on older iPhones.
+ */
+.glass-header {
+  background-color: rgba(11, 11, 13, 0.85);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+html[data-theme="light"] .glass-header {
+  background-color: rgba(245, 245, 247, 0.85);
+}
+
+.glass-rail {
+  background-color: rgba(11, 11, 13, 0.75);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+html[data-theme="light"] .glass-rail {
+  background-color: rgba(245, 245, 247, 0.75);
+}
+
+.glass-drawer {
+  background-color: rgba(21, 21, 23, 0.95);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  backdrop-filter: saturate(180%) blur(28px);
+}
+
+html[data-theme="light"] .glass-drawer {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.glass-border {
+  border-color: rgba(44, 44, 46, 0.7);
+}
+
+html[data-theme="light"] .glass-border {
+  border-color: rgba(210, 210, 215, 0.9);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
