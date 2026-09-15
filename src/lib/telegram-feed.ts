@@ -60,38 +60,44 @@ export function tagFromText(text: string): NewsTag {
 
 export function categoryFromText(text: string): string {
   const lower = text.toLowerCase();
+  const head = (text.split("\n").map((l) => l.trim()).find(Boolean) ?? text).toLowerCase();
 
-  const has = (pattern: RegExp) => pattern.test(lower);
+  const has = (pattern: RegExp, source = lower) => {
+    pattern.lastIndex = 0;
+    return pattern.test(source);
+  };
+  const inHeadline = (pattern: RegExp) => has(pattern, head);
 
+  // Geopolitics first when the headline is clearly conflict / nation-state
   if (
-    has(
-      /\b(war|warfare|invasion|ceasefire|airstrike|air strike|missile|drone strike|troops?|military|army|navy|pentagon|nato|sanctions?|hostilities|geopolitics|geopolitical|conflict)\b/,
+    inHeadline(
+      /\b(war|warfare|invasion|ceasefire|airstrike|missile|troops?|nato|sanctions?|geopolitics|geopolitical)\b/,
     ) ||
     has(
-      /\b(iran|iranian|tehran|israel|israeli|gaza|hamas|hezbollah|lebanon|houthis?|yemen|syria|ukraine|ukrainian|kyiv|kiev|zelensky)\b/,
-    ) ||
-    has(/\b(putin|kremlin|moscow|russian army|taiwan|taipei|strait|north korea|pyongyang|kim jong)\b/)
+      /\b(iran|iranian|tehran|israel|israeli|gaza|hamas|hezbollah|lebanon|houthis?|yemen|syria|ukraine|ukrainian|kyiv|zelensky|putin|kremlin|moscow|taiwan|strait|north korea|pyongyang)\b/,
+    )
   ) {
     return "Geopolitics";
   }
 
   if (
-    has(/\b(data[- ]cent(?:er|re)s?|hyperscale|gigawatt|\bgw\b|10\s*gw|power grid|interconnect(?:ion)?)\b/) ||
+    has(/\b(data[- ]cent(?:er|re)s?|hyperscale|gigawatt|\bgw\b|power grid|interconnect(?:ion)?)\b/) ||
     has(/\b(tsmc|asml|foundry|hbm|nvlink|supercluster|ai campus|ai factory)\b/)
   ) {
     return "AI Infrastructure";
   }
 
+  // Prefer explicit AI labs / models over bare "ai" buried in body
   if (
     has(/\b(openai|anthropic|chatgpt|claude|gemini|grok|xai|deepseek|llm|superintelligence)\b/) ||
-    has(/\b(nvidia|gpu|gpus|semiconductor|ai model|language model)\b/) ||
-    has(/\bai\b/)
+    has(/\b(nvidia|gpu|gpus|semiconductor|ai model|language model|generative ai)\b/) ||
+    inHeadline(/\bai\b/)
   ) {
     return "AI";
   }
 
   if (
-    has(/\b(federal reserve|the fed|fed|fomc|powell|warsh|jackson hole)\b/) ||
+    has(/\b(federal reserve|the fed|fomc|powell|warsh|jackson hole)\b/) ||
     has(/\b(cpi|pce|nfp|nonfarm|inflation|rate[- ]hike|rate[- ]cut|basis points?|bps)\b/) ||
     has(/\b(ecb|boj|gdp|unemployment|jobs report|treasury yield|dxy|dollar index)\b/)
   ) {
@@ -100,14 +106,14 @@ export function categoryFromText(text: string): string {
 
   if (
     has(/\b(earnings|ipo|share price|stock price|equit(?:y|ies)|listed shares)\b/) ||
-    has(/\b(tesla|apple|microsoft|amazon|alphabet|google|meta|microstrategy|strategy)\b/) ||
-    has(/\b(tslab|aaplb|mstrb|nvdab|spcxb|bstocks?)\b/)
+    has(/\b(tesla|apple|microsoft|amazon|alphabet|google|meta platforms|microstrategy)\b/) ||
+    has(/\b(tslab|aaplb|mstrb|nvdab|spcxb)\b/)
   ) {
     return "Equities";
   }
 
   if (
-    has(/\b(s&p|s & p|nasdaq|dow jones|kospi|hang seng|nikkei|stoxx)\b/) ||
+    has(/\b(s&p|nasdaq|dow jones|kospi|hang seng|nikkei|stoxx)\b/) ||
     has(/\b(crude|brent|wti|oil price|gold|silver|copper|commodit(?:y|ies)|yield curve)\b/) ||
     has(/\b(risk[- ]on|risk[- ]off|selloff|sell-off|rally)\b/)
   ) {
@@ -115,7 +121,9 @@ export function categoryFromText(text: string): string {
   }
 
   if (
-    has(/\b(bitcoin|btc|ethereum|ether|\beth\b|solana|\bsol\b|xrp|ripple|crypto|defi|stablecoin|altcoin)\b/)
+    has(
+      /\b(bitcoin|btc|ethereum|ether|\beth\b|solana|\bsol\b|xrp|ripple|crypto|defi|stablecoin|altcoin)\b/,
+    )
   ) {
     return "Crypto";
   }
