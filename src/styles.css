@@ -119,38 +119,46 @@
 }
 
 /*
- * Glass surfaces that work on iOS 15+ (no color-mix).
- * Tailwind v4's bg-*/80 uses color-mix() which Safari < 16.4 ignores,
- * leaving sticky/fixed chrome dark on older iPhones.
+ * Apple-style frosted glass (works on iOS 15+ and modern desktop).
+ * Uses explicit rgba (no color-mix) so backgrounds apply on old Safari,
+ * plus backdrop-filter so scrolled content is actually blurred underneath.
  */
 .glass-header {
-  background-color: rgba(11, 11, 13, 0.85);
+  /* Tint only — keep alpha low enough that blur is visible */
+  background-color: rgba(11, 11, 13, 0.65);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
+  /* Promote to its own layer so the filter samples page content behind sticky chrome */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 html[data-theme="light"] .glass-header {
-  background-color: rgba(245, 245, 247, 0.85);
+  background-color: rgba(245, 245, 247, 0.72);
 }
 
 .glass-rail {
-  background-color: rgba(11, 11, 13, 0.75);
+  background-color: rgba(11, 11, 13, 0.6);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 html[data-theme="light"] .glass-rail {
-  background-color: rgba(245, 245, 247, 0.75);
+  background-color: rgba(245, 245, 247, 0.72);
 }
 
 .glass-drawer {
-  background-color: rgba(21, 21, 23, 0.95);
+  background-color: rgba(21, 21, 23, 0.82);
   -webkit-backdrop-filter: saturate(180%) blur(28px);
   backdrop-filter: saturate(180%) blur(28px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 html[data-theme="light"] .glass-drawer {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.82);
 }
 
 .glass-border {
@@ -158,7 +166,29 @@ html[data-theme="light"] .glass-drawer {
 }
 
 html[data-theme="light"] .glass-border {
-  border-color: rgba(210, 210, 215, 0.9);
+  border-color: rgba(210, 210, 215, 0.85);
+}
+
+/* Fallback when backdrop-filter is unsupported: more opaque so chrome stays readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-header {
+    background-color: rgba(11, 11, 13, 0.94);
+  }
+  html[data-theme="light"] .glass-header {
+    background-color: rgba(245, 245, 247, 0.94);
+  }
+  .glass-rail {
+    background-color: rgba(11, 11, 13, 0.94);
+  }
+  html[data-theme="light"] .glass-rail {
+    background-color: rgba(245, 245, 247, 0.94);
+  }
+  .glass-drawer {
+    background-color: rgba(21, 21, 23, 0.97);
+  }
+  html[data-theme="light"] .glass-drawer {
+    background-color: rgba(255, 255, 255, 0.97);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
