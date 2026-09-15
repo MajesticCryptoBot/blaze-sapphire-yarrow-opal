@@ -17,7 +17,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg">
+    <header className="relative sticky top-0 z-40 border-b border-border/70 bg-bg">
       {/*
         Safari 26 samples the sticky/fixed element's solid background for
         browser chrome tinting. backdrop-filter on the SAME element blocks
