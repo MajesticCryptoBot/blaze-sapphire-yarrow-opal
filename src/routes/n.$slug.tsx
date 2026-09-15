@@ -5,7 +5,6 @@ import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
-import { useLanguage } from "@/lib/language";
 import { formatTime } from "@/lib/news";
 import { parsePublicId, splitHeadline, tagFromText, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
 import { storyPath } from "@/lib/story-url";
@@ -56,7 +55,6 @@ function StoryBack({ from }: { from: string }) {
 function ArticlePage() {
   const { post } = Route.useLoaderData();
   const { from } = Route.useSearch();
-  const { language } = useLanguage();
 
   if (!post) {
     return (
@@ -67,8 +65,7 @@ function ArticlePage() {
     );
   }
 
-  const sourceText = language === "fr" && post.frText ? post.frText : post.text;
-  const { headline, dek } = splitHeadline(sourceText);
+  const { headline, dek } = splitHeadline(post.text);
   const body = dek ? [dek] : [headline];
   const tag = tagFromText(post.text);
 

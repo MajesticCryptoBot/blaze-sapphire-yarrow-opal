@@ -6,7 +6,6 @@ import { LiveChart } from "@/components/live-chart";
 import { LiveWire } from "@/components/live-wire";
 import { Input } from "@/components/ui/input";
 import { CATEGORIES, type Article } from "@/lib/news";
-import { useLanguage } from "@/lib/language";
 import { TELEGRAM_URL, categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +16,7 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
+function toArticle(post: TelegramPost): Article & {
   _telegramId: number;
   _hasPhoto: boolean;
   _hasPhoto2: boolean;
@@ -26,8 +25,7 @@ function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
   _videoUrl: string | null;
   _messageUrl: string | null;
 } {
-  const sourceText = language === "fr" && post.frText ? post.frText : post.text;
-  const { headline, dek } = splitHeadline(sourceText);
+  const { headline, dek } = splitHeadline(post.text);
   return {
     slug: `telegram-${post.id}`,
     tag: tagFromText(post.text),
@@ -50,7 +48,6 @@ function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
 }
 
 function Home() {
-  const { language } = useLanguage();
   const { q: searchQuery } = Route.useSearch();
   const [q, setQ] = useState(searchQuery);
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
@@ -83,7 +80,7 @@ function Home() {
     };
   }, []);
 
-  const allArticles = useMemo(() => posts.map((post) => toArticle(post, language)), [posts, language]);
+  const allArticles = useMemo(() => posts.map(toArticle), [posts]);
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return allArticles.filter((a) => {

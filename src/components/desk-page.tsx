@@ -5,10 +5,9 @@ import { ArticleCard } from "@/components/article-card";
 import { CRYPTO_FACTS } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
 import { type Article } from "@/lib/news";
-import { useLanguage } from "@/lib/language";
 import { categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 
-function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
+function toArticle(post: TelegramPost): Article & {
   _telegramId: number;
   _hasPhoto: boolean;
   _hasPhoto2: boolean;
@@ -16,8 +15,7 @@ function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
   _videoMimeType: string | null;
   _videoUrl: string | null;
 } {
-  const sourceText = language === "fr" && post.frText ? post.frText : post.text;
-  const { headline, dek } = splitHeadline(sourceText);
+  const { headline, dek } = splitHeadline(post.text);
   return {
     slug: `telegram-${post.id}`,
     tag: tagFromText(post.text),
@@ -39,7 +37,6 @@ function toArticle(post: TelegramPost, language: "en" | "fr"): Article & {
 }
 
 export function DeskPage({ section }: { section: DeskSection }) {
-  const { language } = useLanguage();
   const [posts, setPosts] = useState<TelegramPost[] | null>(null);
 
   useEffect(() => {
@@ -61,8 +58,8 @@ export function DeskPage({ section }: { section: DeskSection }) {
   }, [section.slug]);
 
   const items = useMemo(
-    () => (posts ?? []).filter((post) => matchesDesk(post, section)).map((post) => toArticle(post, language)).slice(0, 20),
-    [posts, section, language],
+    () => (posts ?? []).filter((post) => matchesDesk(post, section)).map(toArticle).slice(0, 20),
+    [posts, section],
   );
   const [lead, ...rest] = items;
 

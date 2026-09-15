@@ -5,7 +5,6 @@ import { HeaderMenuButton } from "@/components/site-nav";
 import { DeskStrip } from "@/components/desk-strip";
 import { ThemeToggle } from "@/components/theme";
 import { WorldClocks } from "@/components/world-clocks";
-import { LanguageToggle } from "@/lib/language";
 
 export function SiteHeader() {
   const navigate = useNavigate();
@@ -18,7 +17,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="site-chrome sticky top-0 z-40 border-b border-border/70 bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/65">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/65">
       <div className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 md:pl-14">
         <HeaderMenuButton />
 
@@ -51,7 +50,6 @@ export function SiteHeader() {
           </label>
         </form>
 
-        <LanguageToggle />
         <ThemeToggle />
       </div>
       <DeskStrip />
