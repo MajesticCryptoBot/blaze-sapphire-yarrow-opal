@@ -67,51 +67,16 @@ export async function translateNewsToFrench(text: string): Promise<string> {
   return translated;
 }
 
-export async function translateAndStoreNews(id: number, text: string): Promise<string> {
+export async function translateAndStoreNews(messageId: number, text: string): Promise<string> {
   const translated = await translateNewsToFrench(text);
   const sql = await getSql();
   await sql.query(
     `update telegram_posts
         set fr_text = $1,
             updated_at = CURRENT_TIMESTAMP
-      where (id = $2 or message_id = $2)
+      where message_id = $2
         and lower(replace(coalesce(chat_username, ''), '@', '')) = 'alphasignalspro'`,
-    [translated, id],
+    [translated, messageId],
   );
   return translated;
-}
-
-export async function translatePendingNews(limit = 5): Promise<{ translated: number; remaining: number }> {
-  const sql = await getSql();
-  const safeLimit = Math.min(Math.max(limit, 1), 10);
-  const rows = await sql.query<{ id: number; text: string }>(
-    `select id, text
-       from telegram_posts
-      where lower(replace(coalesce(chat_username, ''), '@', '')) = 'alphasignalspro'
-        and trim(text) <> ''
-        and (fr_text is null or trim(fr_text) = '')
-      order by published_at desc
-      limit $1`,
-    [safeLimit],
-  );
-
-  let translated = 0;
-  for (const row of rows) {
-    try {
-      await translateAndStoreNews(Number(row.id), row.text);
-      translated += 1;
-    } catch (error) {
-      console.error(`[groq] translation failed for ${row.id}:`, error instanceof Error ? error.message : error);
-    }
-  }
-
-  const remainingRows = await sql.query<{ count: number | string }>(
-    `select count(*) as count
-       from telegram_posts
-      where lower(replace(coalesce(chat_username, ''), '@', '')) = 'alphasignalspro'
-        and trim(text) <> ''
-        and (fr_text is null or trim(fr_text) = '')`,
-  );
-
-  return { translated, remaining: Number(remainingRows[0]?.count ?? 0) };
 }
