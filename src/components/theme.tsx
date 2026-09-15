@@ -25,10 +25,14 @@ function applyTheme(theme: ThemeName) {
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
 
-  // === SURGICAL IPHONE LIGHT-MODE FIX ===
-  // Keep Safari's mobile browser chrome aligned with the selected app theme.
-  const themeColor = document.querySelector('meta[name="theme-color"]');
-  if (themeColor && window.matchMedia("(max-width: 767px)").matches) {
+  // Keep Safari's browser chrome and page color-scheme synchronized.
+  const colorScheme = document.querySelector('meta[name="color-scheme"]');
+  if (colorScheme) {
+    colorScheme.setAttribute("content", theme);
+  }
+
+  const themeColors = document.querySelectorAll('meta[name="theme-color"]');
+  for (const themeColor of themeColors) {
     themeColor.setAttribute("content", theme === "light" ? "#f5f5f7" : "#0b0b0d");
   }
 }
