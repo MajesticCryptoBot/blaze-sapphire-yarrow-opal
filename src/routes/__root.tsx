@@ -15,15 +15,21 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
       { title: APP_NAME },
       {
         name: "description",
         content:
           "ASP News — live market intelligence for crypto, macro, and AI.",
       },
-      { name: "theme-color", content: "#09090b" },
+      // Default dark; JS below and ThemeProvider keep this in sync with light mode
+      { name: "theme-color", content: "#0b0b0d" },
       { name: "color-scheme", content: "dark light" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -44,7 +50,7 @@ export const Route = createRootRoute({
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t!=="light"&&t!=="dark")t="dark";document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;var c=t==="light"?"#f5f5f7":"#0b0b0d";var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c);else{m=document.createElement("meta");m.name="theme-color";m.content=c;document.head.appendChild(m);}var s=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');if(s)s.setAttribute("content",t==="light"?"default":"black-translucent");}catch(e){}})();`,
           }}
         />
       </head>
