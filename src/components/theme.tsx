@@ -13,6 +13,12 @@ export type ThemeName = "dark" | "light";
 
 const STORAGE_KEY = "asp-theme";
 
+/** Matches --color-bg in styles.css for each theme */
+const THEME_COLORS: Record<ThemeName, string> = {
+  dark: "#0b0b0d",
+  light: "#f5f5f7",
+};
+
 type ThemeContextValue = {
   theme: ThemeName;
   toggle: () => void;
@@ -20,10 +26,26 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function setMeta(name: string, content: string) {
+  let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.name = name;
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
 function applyTheme(theme: ThemeName) {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+
+  // Keep iOS Safari top chrome / status bar in sync with the site theme so the
+  // sticky translucent header does not sit under a permanent dark browser bar.
+  const color = THEME_COLORS[theme];
+  setMeta("theme-color", color);
+  setMeta("apple-mobile-web-app-status-bar-style", theme === "light" ? "default" : "black-translucent");
 }
 
 export function readStoredTheme(): ThemeName {
