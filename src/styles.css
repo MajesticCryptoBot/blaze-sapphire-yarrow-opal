@@ -118,6 +118,26 @@
   }
 }
 
+/* === SURGICAL IPHONE LIGHT-MODE FIX ===
+   Desktop and iPhone dark mode remain unchanged.
+   Only the mobile light-mode translucent chrome/panel is corrected. */
+@media (max-width: 767px) {
+  html[data-theme="light"] header.sticky {
+    background-color: rgba(255, 255, 255, 0.72) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  html[data-theme="light"] [aria-label="Desk navigation"] {
+    background-color: rgba(255, 255, 255, 0.88) !important;
+    border-right-color: rgba(0, 0, 0, 0.08) !important;
+    color: var(--color-foreground);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

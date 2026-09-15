@@ -24,6 +24,13 @@ function applyTheme(theme: ThemeName) {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+
+  // === SURGICAL IPHONE LIGHT-MODE FIX ===
+  // Keep Safari's mobile browser chrome aligned with the selected app theme.
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor && window.matchMedia("(max-width: 767px)").matches) {
+    themeColor.setAttribute("content", theme === "light" ? "#f5f5f7" : "#0b0b0d");
+  }
 }
 
 export function readStoredTheme(): ThemeName {
