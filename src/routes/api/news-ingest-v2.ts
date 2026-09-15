@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
-import { translateAndStoreNews, translatePendingNews } from "@/lib/groq-translation";
+import { translateAndStoreNews } from "@/lib/groq-translation";
 
-const INGEST_VERSION = "ASP-INGEST-V15-GROQ-FR-20260915";
+const INGEST_VERSION = "ASP-INGEST-V16-GROQ-FR-LIVE-20260915";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 const MAX_VIDEO_BASE64 = 4_000_000;
@@ -43,8 +43,6 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         }
 
         let body: {
-          backfill?: boolean;
-          limit?: number;
           messageId?: number | string;
           text?: string;
           publishedAt?: string;
@@ -65,16 +63,6 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           body = await request.json();
         } catch {
           return json({ ok: false, error: "Invalid JSON", version: INGEST_VERSION }, 400);
-        }
-
-        if (body.backfill === true) {
-          try {
-            const result = await translatePendingNews(body.limit ?? 5);
-            return json({ ok: true, mode: "backfill", version: INGEST_VERSION, model: "openai/gpt-oss-120b", ...result });
-          } catch (error) {
-            console.error("[groq] backfill failed:", error);
-            return json({ ok: false, mode: "backfill", version: INGEST_VERSION, error: error instanceof Error ? error.message : "Translation failed" }, 500);
-          }
         }
 
         const messageId = Number(body.messageId);
