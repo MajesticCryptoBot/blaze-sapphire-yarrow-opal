@@ -63,7 +63,7 @@ export function HeaderMenuButton() {
       onClick={toggle}
       aria-label={open ? "Close desk navigation" : "Open desk navigation"}
       aria-expanded={open}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+      className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure md:hidden"
     >
       {open ? <X className="size-5" /> : <Menu className="size-5" />}
     </button>
@@ -80,10 +80,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         const href = "params" in item && item.params ? `/${item.params.slug}` : item.to;
         const active = pathname === href;
         const className = cn(
-          "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-[background-color,color] duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-[background-color,color] duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
           active
-            ? "bg-foreground/10 text-foreground"
-            : "text-muted hover:bg-foreground/5 hover:text-foreground",
+            ? "bg-azure/15 text-azure"
+            : "text-muted hover:bg-azure/10 hover:text-azure",
         );
 
         if (item.to === "/") {
@@ -147,7 +147,7 @@ export function SideBar() {
           onClick={() => setOpen(true)}
           aria-label="Open desk navigation"
           aria-expanded={open}
-          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure"
         >
           <Menu className="size-5" />
         </button>
@@ -188,7 +188,7 @@ export function SideBar() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close desk navigation"
-              className="flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure"
             >
               <X className="size-4" />
             </button>
