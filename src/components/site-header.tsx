@@ -17,7 +17,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/80 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/65">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-bg/80 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-bg/65 dark:supports-[backdrop-filter]:bg-bg/65">
       <div className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 md:pl-14">
         <HeaderMenuButton />
 
