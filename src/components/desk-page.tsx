@@ -6,7 +6,6 @@ import { WatchToggle } from "@/components/watch-toggle";
 import { getWeeklyFacts } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
-import { whyItMoved } from "@/lib/mover-notes";
 import { type Article } from "@/lib/news";
 import { categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -57,7 +56,7 @@ function MoversTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full min-w-[640px] text-left">
+      <table className="w-full min-w-[560px] text-left">
         <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
           <tr>
             <th className="px-4 py-3 font-medium">#</th>
@@ -65,7 +64,7 @@ function MoversTable({
             <th className="px-4 py-3 font-medium">Name</th>
             <th className="px-4 py-3 font-medium">Last</th>
             <th className="px-4 py-3 font-medium">24h</th>
-            <th className="px-4 py-3 font-medium">Why it moved</th>
+            <th className="px-4 py-3 font-medium">Group</th>
           </tr>
         </thead>
         <tbody>
@@ -80,8 +79,8 @@ function MoversTable({
                 <td className={cn("px-4 py-3 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
                   {up ? "+" : ""}{market.change24h.toFixed(2)}%
                 </td>
-                <td className="max-w-xs px-4 py-3 font-news text-[13px] leading-snug text-muted">
-                  {whyItMoved(market)}
+                <td className="px-4 py-3 font-mono text-[11px] uppercase tracking-wide text-subtle">
+                  {market.group === "bstock" ? "bStock" : "CEX"}
                 </td>
               </tr>
             );
@@ -173,7 +172,7 @@ function TopMoversPanel() {
           24-hour tape
         </p>
         <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-          Gainers and losers among major CEX tokens and bStocks, ranked by 24-hour change — with a short desk note on why each name is moving.
+          Gainers and losers among major CEX tokens and bStocks, ranked by 24-hour change.
         </p>
       </div>
 
