@@ -14,7 +14,7 @@ export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: 
   const first = `/api/telegram-photo?id=${id}&photo=1`;
   const second = `/api/telegram-photo?id=${id}&photo=2`;
 
-  // Homepage / card: shared frame height; object-contain keeps full logos (no zoom crop).
+  // Homepage / card: fixed frame, object-cover fills the deck edge-to-edge (no empty sides).
   if (size !== "article") {
     const frame = "aspect-[16/10] w-full";
     if (hasPhoto2) {
@@ -24,13 +24,13 @@ export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: 
             src={first}
             alt=""
             loading="lazy"
-            className="h-full w-full object-contain bg-elevated"
+            className="h-full w-full object-cover object-center"
           />
           <img
             src={second}
             alt=""
             loading="lazy"
-            className="h-full w-full object-contain bg-elevated"
+            className="h-full w-full object-cover object-center"
           />
         </div>
       );
@@ -41,13 +41,13 @@ export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: 
           src={first}
           alt=""
           loading="lazy"
-          className="h-full w-full object-contain bg-elevated"
+          className="h-full w-full object-cover object-center"
         />
       </div>
     );
   }
 
-  // Story page: pair stays side-by-side; single can show fuller image.
+  // Story page layout.
   if (hasPhoto2) {
     return (
       <div className="grid grid-cols-2 gap-[3px] overflow-hidden rounded-md bg-elevated">
@@ -55,13 +55,13 @@ export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: 
           src={first}
           alt=""
           loading="eager"
-          className="h-full w-full max-h-[320px] aspect-[4/3] object-contain bg-elevated"
+          className="h-full w-full max-h-[320px] aspect-[4/3] object-cover object-center"
         />
         <img
           src={second}
           alt=""
           loading="eager"
-          className="h-full w-full max-h-[320px] aspect-[4/3] object-contain bg-elevated"
+          className="h-full w-full max-h-[320px] aspect-[4/3] object-cover object-center"
         />
       </div>
     );
