@@ -2,10 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
-import { CRYPTO_FACTS } from "@/lib/crypto-facts";
+import { getWeeklyFacts } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
+import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { type Article } from "@/lib/news";
 import { categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
+import { cn } from "@/lib/utils";
 
 function toArticle(post: TelegramPost): Article & {
   _telegramId: number;
@@ -36,10 +38,132 @@ function toArticle(post: TelegramPost): Article & {
   };
 }
 
+function formatPrice(value: number) {
+  if (value >= 1000) return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  if (value >= 1) return value.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
+}
+
+function TopMoversPanel() {
+  const [markets, setMarkets] = useState<MarketQuote[]>([]);
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch("/api/market-prices", { cache: "no-store" });
+        if (response.ok) {
+          const payload = (await response.json()) as { data?: MarketQuote[] };
+          const rows = payload.data ?? [];
+          if (rows.length > 0) {
+            if (active) {
+              setMarkets(rows);
+              setError(false);
+              setLoaded(true);
+            }
+            return;
+          }
+        }
+      } catch {
+        // Fall through to a direct Binance public request.
+      }
+
+      try {
+        const rows = await fetchBinanceMarkets();
+        if (active) {
+          setMarkets(rows);
+          setError(rows.length === 0);
+        }
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoaded(true);
+      }
+    };
+
+    void load();
+    const timer = window.setInterval(load, PRICE_REFRESH_MS);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  // Only CEX majors + bStocks (already the case in BINANCE_ASSETS). Sort by absolute 24h move.
+  const ranked = useMemo(() => {
+    return [...markets]
+      .filter((m) => m.group === "crypto" || m.group === "bstock")
+      .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
+  }, [markets]);
+
+  return (
+    <section className="mt-8">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+        24-hour leaders
+      </p>
+      <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
+        Ranked by absolute price change. Only major CEX tokens and bStocks — DeFi and memecoins are excluded.
+      </p>
+
+      <div className="mt-6 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full min-w-[560px] text-left">
+          <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
+            <tr>
+              <th className="px-4 py-3 font-medium">#</th>
+              <th className="px-4 py-3 font-medium">Symbol</th>
+              <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">Last</th>
+              <th className="px-4 py-3 font-medium">24h</th>
+              <th className="px-4 py-3 font-medium">Group</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((market, index) => {
+              const up = market.change24h >= 0;
+              return (
+                <tr key={market.symbol} className="border-t border-border">
+                  <td className="px-4 py-3 font-mono text-sm text-subtle">{index + 1}</td>
+                  <td className="px-4 py-3 font-mono text-sm font-semibold">{market.symbol}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{market.name}</td>
+                  <td className="px-4 py-3 font-mono text-sm tabular-nums">${formatPrice(market.price)}</td>
+                  <td className={cn("px-4 py-3 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
+                    {up ? "+" : ""}{market.change24h.toFixed(2)}%
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[11px] uppercase tracking-wide text-subtle">
+                    {market.group === "bstock" ? "bStock" : "CEX"}
+                  </td>
+                </tr>
+              );
+            })}
+            {!loaded && ranked.length === 0
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-4 py-3 text-sm text-subtle" colSpan={6}>
+                      Loading movers…
+                    </td>
+                  </tr>
+                ))
+              : null}
+          </tbody>
+        </table>
+      </div>
+
+      {error && ranked.length === 0 && loaded ? (
+        <p className="mt-5 text-sm text-muted">
+          Movers are temporarily unavailable. Please try again shortly.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export function DeskPage({ section }: { section: DeskSection }) {
   const [posts, setPosts] = useState<TelegramPost[] | null>(null);
 
   useEffect(() => {
+    if (section.slug === "top-movers") return;
     let active = true;
     const load = async () => {
       try {
@@ -63,6 +187,8 @@ export function DeskPage({ section }: { section: DeskSection }) {
   );
   const [lead, ...rest] = items;
 
+  const weeklyFacts = useMemo(() => getWeeklyFacts(8), []);
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <Link
@@ -82,20 +208,28 @@ export function DeskPage({ section }: { section: DeskSection }) {
         <p className="mt-4 font-news text-lg leading-[1.6] text-muted">{section.dek}</p>
       </header>
 
+      {section.slug === "top-movers" ? <TopMoversPanel /> : null}
+
       {section.slug === "fun-facts" ? (
         <section className="mt-8">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-            Sourced notebook
+            This week’s notebook
           </p>
           <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-            These notes are taken from primary Bitcoin literature — the white paper,
-            the Nakamoto Institute archive, Cambridge’s CBECI, and the SEC — not from
-            recap blogs.
+            A rotating selection of sourced Bitcoin notes and lighter humoristic crypto stories.
+            The set refreshes every week so the desk never shows the exact same facts.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {CRYPTO_FACTS.map((fact) => (
+            {weeklyFacts.map((fact) => (
               <article key={fact.title} className="rounded-lg border border-border bg-surface p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{fact.year}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{fact.year}</p>
+                  {fact.tone === "humor" ? (
+                    <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-subtle">
+                      Humor
+                    </span>
+                  ) : null}
+                </div>
                 <h2 className="mt-2 font-display text-xl font-medium">{fact.title}</h2>
                 <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted">{fact.body}</p>
                 <a
@@ -112,7 +246,7 @@ export function DeskPage({ section }: { section: DeskSection }) {
         </section>
       ) : null}
 
-      {posts === null ? (
+      {section.slug === "top-movers" ? null : posts === null ? (
         <p className="mt-10 font-news text-base text-muted">Loading this desk…</p>
       ) : !lead ? (
         section.slug === "fun-facts" ? null : (

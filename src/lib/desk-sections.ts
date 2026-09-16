@@ -366,7 +366,7 @@ export const DESK_SECTIONS: DeskSection[] = [
     label: "Fun Facts",
     kicker: "Notebook",
     headline: "Fun facts",
-    dek: "Short, sourced notes on Bitcoin and crypto history — not trading calls.",
+    dek: "Short, sourced notes on Bitcoin and crypto history — plus a few humoristic stories. Rotates every week.",
     patterns: [
       /\bfun\s+facts?\b/i,
       /\bdid\s+you\s+know\b/i,
@@ -375,6 +375,14 @@ export const DESK_SECTIONS: DeskSection[] = [
       /\bgenesis\s+block\b/i,
     ],
     minScore: 2,
+  },
+  {
+    slug: "top-movers",
+    label: "Top Movers",
+    kicker: "Daily tape",
+    headline: "Top Movers",
+    dek: "Biggest 24-hour price moves among major CEX tokens and bStocks. DeFi and memecoins are excluded.",
+    patterns: [],
   },
   {
     slug: "videos",
@@ -416,6 +424,7 @@ function hitsAny(text: string, patterns: RegExp[]) {
 export function matchesDesk(post: { text: string; hasVideo?: boolean }, section: DeskSection) {
   if (section.slug === "news") return true;
   if (section.slug === "videos") return Boolean(post.hasVideo);
+  if (section.slug === "top-movers") return false; // rendered specially
   if (section.patterns.length === 0) return false;
 
   const text = post.text ?? "";

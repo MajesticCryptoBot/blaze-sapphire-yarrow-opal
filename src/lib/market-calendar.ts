@@ -7,8 +7,9 @@ export type CalendarEvent = {
   previous: string;
 };
 
-const WATCH = /\b(cpi|ppi|pce|nfp|non-farm|nonfarm|payroll|fomc|interest rate|rate decision|gdp|unemployment|powell|jackson|fed|ecb|boj|retail sales|ism|jobless|core)\b/i;
-const COUNTRIES = new Set(["USD", "EUR", "GBP", "JPY", "CNY", "CAD", "AUD", "CHF"]);
+const WATCH = /\b(cpi|ppi|pce|nfp|non-farm|nonfarm|payroll|fomc|interest rate|rate decision|gdp|unemployment|powell|jackson|fed|retail sales|ism|jobless|core)\b/i;
+/** US-only — no EUR, GBP, JPY, or other non-US prints */
+const COUNTRIES = new Set(["USD"]);
 
 type RawEvent = {
   title?: string;
@@ -50,7 +51,7 @@ export function selectMarketEvents(raw: RawEvent[]): CalendarEvent[] {
     .slice(0, 40);
 }
 
-/** Official remaining 2026 prints if the live diary is unreachable. Times are UTC. */
+/** Official remaining 2026 prints if the live diary is unreachable. Times are UTC. US only. */
 export const FALLBACK_CALENDAR: CalendarEvent[] = [
   { title: "Consumer Price Index (CPI)", country: "USD", at: "2026-09-11T12:30:00.000Z", impact: "High", forecast: "", previous: "" },
   { title: "FOMC Rate Decision", country: "USD", at: "2026-09-16T18:00:00.000Z", impact: "High", forecast: "", previous: "" },

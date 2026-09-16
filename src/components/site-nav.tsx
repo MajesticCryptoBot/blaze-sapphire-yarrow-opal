@@ -8,6 +8,7 @@ import {
   Menu,
   Rocket,
   Sparkles,
+  Trophy,
   TrendingUp,
   X,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const SECTIONS = [
   { label: "Innovation", to: "/$slug" as const, params: { slug: "innovation" }, icon: Rocket },
   { label: "The Calendar", to: "/calendar" as const, icon: CalendarDays },
   { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
+  { label: "Top Movers", to: "/$slug" as const, params: { slug: "top-movers" }, icon: Trophy },
 ];
 
 type NavContextValue = {
