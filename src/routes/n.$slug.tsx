@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { GlossaryText } from "@/components/glossary-text";
 import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
@@ -98,7 +99,11 @@ function ArticlePage() {
         ) : null}
 
         <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground">
-          {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {body.map((paragraph, index) => (
+            <p key={index}>
+              <GlossaryText text={paragraph} />
+            </p>
+          ))}
         </div>
 
         <div className="mt-6 border-t border-border pt-2">

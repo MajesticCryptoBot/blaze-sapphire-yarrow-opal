@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
+import { WatchToggle } from "@/components/watch-toggle";
 import { getWeeklyFacts } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
+import { whyItMoved } from "@/lib/mover-notes";
 import { type Article } from "@/lib/news";
 import { categoryFromText, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -55,7 +57,7 @@ function MoversTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full min-w-[560px] text-left">
+      <table className="w-full min-w-[640px] text-left">
         <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
           <tr>
             <th className="px-4 py-3 font-medium">#</th>
@@ -63,7 +65,7 @@ function MoversTable({
             <th className="px-4 py-3 font-medium">Name</th>
             <th className="px-4 py-3 font-medium">Last</th>
             <th className="px-4 py-3 font-medium">24h</th>
-            <th className="px-4 py-3 font-medium">Group</th>
+            <th className="px-4 py-3 font-medium">Why it moved</th>
           </tr>
         </thead>
         <tbody>
@@ -78,8 +80,8 @@ function MoversTable({
                 <td className={cn("px-4 py-3 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
                   {up ? "+" : ""}{market.change24h.toFixed(2)}%
                 </td>
-                <td className="px-4 py-3 font-mono text-[11px] uppercase tracking-wide text-subtle">
-                  {market.group === "bstock" ? "bStock" : "CEX"}
+                <td className="max-w-xs px-4 py-3 font-news text-[13px] leading-snug text-muted">
+                  {whyItMoved(market)}
                 </td>
               </tr>
             );
@@ -171,7 +173,7 @@ function TopMoversPanel() {
           24-hour tape
         </p>
         <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-          Gainers and losers among major CEX tokens and bStocks, ranked by 24-hour change.
+          Gainers and losers among major CEX tokens and bStocks, ranked by 24-hour change — with a short desk note on why each name is moving.
         </p>
       </div>
 
@@ -241,17 +243,21 @@ export function DeskPage({ section }: { section: DeskSection }) {
   const [lead, ...rest] = items;
 
   const weeklyFacts = useMemo(() => getWeeklyFacts(8), []);
+  const canWatch = section.slug !== "news" && section.slug !== "top-movers";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <Link
-        to="/"
-        search={{ q: "" }}
-        className="inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure"
-      >
-        <ArrowLeft className="size-4" />
-        Back
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/"
+          search={{ q: "" }}
+          className="inline-flex h-11 items-center gap-2 text-sm text-muted transition-colors hover:text-azure"
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </Link>
+        {canWatch ? <WatchToggle slug={section.slug} label={section.label} /> : null}
+      </div>
 
       <header className="mt-6 max-w-3xl border-b border-border pb-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">

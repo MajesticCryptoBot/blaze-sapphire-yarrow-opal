@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
+import { BriefOfHour } from "@/components/brief-of-hour";
 import { LiveChart } from "@/components/live-chart";
 import { LiveWire } from "@/components/live-wire";
+import { WatchListBar } from "@/components/watch-list-bar";
 import { Input } from "@/components/ui/input";
 import { CATEGORIES, type Article } from "@/lib/news";
 import { filterAndRankArticles } from "@/lib/search";
@@ -99,7 +101,9 @@ function Home() {
         <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">Alpha Signals Pro covers crypto, macro, and AI as it hits the tape. Headlines move first on Telegram. This desk holds the full brief.</p>
       </section>
 
+      <WatchListBar />
       <LiveWire latest={posts[0]} />
+      <BriefOfHour post={posts[0] ?? null} />
       <LiveChart className="mt-6" />
 
       <div id="feed" className="mt-12 flex scroll-mt-24 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
