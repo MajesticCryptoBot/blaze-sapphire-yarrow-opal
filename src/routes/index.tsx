@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
-import { BriefOfHour } from "@/components/brief-of-hour";
 import { LiveChart } from "@/components/live-chart";
 import { LiveWire } from "@/components/live-wire";
 import { WatchListBar } from "@/components/watch-list-bar";
@@ -103,7 +102,6 @@ function Home() {
 
       <WatchListBar />
       <LiveWire latest={posts[0]} />
-      <BriefOfHour post={posts[0] ?? null} />
       <LiveChart className="mt-6" />
 
       <div id="feed" className="mt-12 flex scroll-mt-24 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
