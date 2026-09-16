@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { EventCountdown } from "@/components/event-countdown";
 import { HeaderMenuButton } from "@/components/site-nav";
 import { DeskStrip } from "@/components/desk-strip";
 import { ThemeToggle } from "@/components/theme";
@@ -61,7 +60,6 @@ export function SiteHeader() {
         <ThemeToggle />
       </div>
       <DeskStrip />
-      <EventCountdown />
       <WorldClocks />
     </header>
   );
