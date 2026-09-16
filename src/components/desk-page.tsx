@@ -269,8 +269,7 @@ export function DeskPage({ section }: { section: DeskSection }) {
             This week’s notebook
           </p>
           <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-            A rotating selection of sourced Bitcoin notes and lighter humoristic crypto stories.
-            The set refreshes every week so the desk never shows the exact same facts.
+            For the curious
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {weeklyFacts.map((fact) => (

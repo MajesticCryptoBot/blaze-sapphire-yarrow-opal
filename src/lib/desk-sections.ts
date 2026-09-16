@@ -366,7 +366,7 @@ export const DESK_SECTIONS: DeskSection[] = [
     label: "Fun Facts",
     kicker: "Notebook",
     headline: "Fun facts",
-    dek: "Short, sourced notes on Bitcoin and crypto history — plus a few humoristic stories. Rotates every week.",
+    dek: "Short, sourced notes on Bitcoin and crypto history",
     patterns: [
       /\bfun\s+facts?\b/i,
       /\bdid\s+you\s+know\b/i,
