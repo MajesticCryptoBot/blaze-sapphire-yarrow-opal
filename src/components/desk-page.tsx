@@ -104,7 +104,7 @@ function TopMoversPanel() {
         24-hour leaders
       </p>
       <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-        Ranked by absolute price change. Only major CEX tokens and bStocks — DeFi and memecoins are excluded.
+        Ranked by absolute price change among major CEX tokens and bStocks.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-border">

@@ -381,7 +381,7 @@ export const DESK_SECTIONS: DeskSection[] = [
     label: "Top Movers",
     kicker: "Daily tape",
     headline: "Top Movers",
-    dek: "Biggest 24-hour price moves among major CEX tokens and bStocks. DeFi and memecoins are excluded.",
+    dek: "Biggest 24-hour price moves among major CEX tokens and bStocks.",
     patterns: [],
   },
   {
