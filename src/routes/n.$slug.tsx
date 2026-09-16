@@ -1,8 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useRef } from "react";
 import { GlossaryText } from "@/components/glossary-text";
+import { RelatedDesks } from "@/components/related-desks";
 import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
+import { StoryStickyBar } from "@/components/story-sticky-bar";
 import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
@@ -56,6 +59,7 @@ function StoryBack({ from }: { from: string }) {
 function ArticlePage() {
   const { post } = Route.useLoaderData();
   const { from } = Route.useSearch();
+  const headlineRef = useRef<HTMLHeadingElement>(null);
 
   if (!post) {
     return (
@@ -69,9 +73,12 @@ function ArticlePage() {
   const { headline, dek } = splitHeadline(post.text);
   const body = dek ? [dek] : [headline];
   const tag = tagFromText(post.text);
+  const path = storyPath(post.id);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <StoryStickyBar title={headline} path={path} sentinelRef={headlineRef} />
+
       <StoryBack from={from} />
 
       <article className="mt-6 max-w-3xl">
@@ -81,7 +88,9 @@ function ArticlePage() {
           <time className="font-mono text-[11px] tabular-nums text-subtle">{formatTime(post.publishedAt)} UTC</time>
         </div>
 
-        <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
+        <h1 ref={headlineRef} className="mt-4 font-display text-3xl font-medium sm:text-4xl">
+          {headline}
+        </h1>
 
         {post.hasVideo ? (
           <div className="mt-6">
@@ -107,8 +116,10 @@ function ArticlePage() {
         </div>
 
         <div className="mt-6 border-t border-border pt-2">
-          <ShareBar title={headline} path={storyPath(post.id)} />
+          <ShareBar title={headline} path={path} />
         </div>
+
+        <RelatedDesks text={post.text} />
 
         {post.messageUrl ? (
           <div className="mt-8 rounded-md border border-border bg-surface p-4">
