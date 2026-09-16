@@ -23,10 +23,10 @@ export function WatchToggle({ slug, label }: { slug: string; label: string }) {
       aria-pressed={on}
       aria-label={on ? `Remove ${label} from My desk` : `Add ${label} to My desk`}
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-[background-color,border-color,color] duration-[var(--motion-quick)]",
+        "inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium",
         on
-          ? "border-azure/40 bg-azure/10 text-azure"
-          : "border-border text-muted hover:border-azure hover:bg-azure/10 hover:text-azure",
+          ? "border-azure bg-surface text-azure"
+          : "border-border bg-surface text-muted",
       )}
     >
       <Star className={cn("size-4", on && "fill-current")} strokeWidth={1.8} />
