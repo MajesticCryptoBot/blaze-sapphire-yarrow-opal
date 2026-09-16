@@ -28,8 +28,7 @@ export function ArticleCard({
   const path = storyPath(article._telegramId ?? slug);
   const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
-  // Show photos on every card that has them (homepage grid stays visual and even).
-  const hasPhotos = Boolean(article._telegramId && article._hasPhoto);
+  const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
 
   return (
@@ -48,7 +47,7 @@ export function ArticleCard({
               id={article._telegramId}
               hasPhoto={Boolean(article._hasPhoto)}
               hasPhoto2={Boolean(article._hasPhoto2)}
-              size="wire"
+              size={featured ? "article" : "wire"}
             />
           )}
         </div>
