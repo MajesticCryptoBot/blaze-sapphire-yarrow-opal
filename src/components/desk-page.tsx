@@ -44,6 +44,68 @@ function formatPrice(value: number) {
   return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
 }
 
+function MoversTable({
+  rows,
+  emptyLabel,
+  loading,
+}: {
+  rows: MarketQuote[];
+  emptyLabel: string;
+  loading: boolean;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full min-w-[560px] text-left">
+        <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
+          <tr>
+            <th className="px-4 py-3 font-medium">#</th>
+            <th className="px-4 py-3 font-medium">Symbol</th>
+            <th className="px-4 py-3 font-medium">Name</th>
+            <th className="px-4 py-3 font-medium">Last</th>
+            <th className="px-4 py-3 font-medium">24h</th>
+            <th className="px-4 py-3 font-medium">Group</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((market, index) => {
+            const up = market.change24h >= 0;
+            return (
+              <tr key={market.symbol} className="border-t border-border">
+                <td className="px-4 py-3 font-mono text-sm text-subtle">{index + 1}</td>
+                <td className="px-4 py-3 font-mono text-sm font-semibold">{market.symbol}</td>
+                <td className="px-4 py-3 text-sm text-muted">{market.name}</td>
+                <td className="px-4 py-3 font-mono text-sm tabular-nums">${formatPrice(market.price)}</td>
+                <td className={cn("px-4 py-3 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
+                  {up ? "+" : ""}{market.change24h.toFixed(2)}%
+                </td>
+                <td className="px-4 py-3 font-mono text-[11px] uppercase tracking-wide text-subtle">
+                  {market.group === "bstock" ? "bStock" : "CEX"}
+                </td>
+              </tr>
+            );
+          })}
+          {loading && rows.length === 0
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="px-4 py-3 text-sm text-subtle" colSpan={6}>
+                    Loading…
+                  </td>
+                </tr>
+              ))
+            : null}
+          {!loading && rows.length === 0 ? (
+            <tr className="border-t border-border">
+              <td className="px-4 py-3 text-sm text-muted" colSpan={6}>
+                {emptyLabel}
+              </td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function TopMoversPanel() {
   const [markets, setMarkets] = useState<MarketQuote[]>([]);
   const [error, setError] = useState(false);
@@ -91,67 +153,58 @@ function TopMoversPanel() {
     };
   }, []);
 
-  // Only CEX majors + bStocks (already the case in BINANCE_ASSETS). Sort by absolute 24h move.
-  const ranked = useMemo(() => {
-    return [...markets]
-      .filter((m) => m.group === "crypto" || m.group === "bstock")
-      .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
+  const { gainers, losers } = useMemo(() => {
+    const pool = markets.filter((m) => m.group === "crypto" || m.group === "bstock");
+    const gainers = pool
+      .filter((m) => m.change24h > 0)
+      .sort((a, b) => b.change24h - a.change24h);
+    const losers = pool
+      .filter((m) => m.change24h < 0)
+      .sort((a, b) => a.change24h - b.change24h);
+    return { gainers, losers };
   }, [markets]);
 
   return (
-    <section className="mt-8">
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-        24-hour leaders
-      </p>
-      <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-        Ranked by absolute price change among major CEX tokens and bStocks.
-      </p>
-
-      <div className="mt-6 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[560px] text-left">
-          <thead className="bg-surface font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
-            <tr>
-              <th className="px-4 py-3 font-medium">#</th>
-              <th className="px-4 py-3 font-medium">Symbol</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Last</th>
-              <th className="px-4 py-3 font-medium">24h</th>
-              <th className="px-4 py-3 font-medium">Group</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranked.map((market, index) => {
-              const up = market.change24h >= 0;
-              return (
-                <tr key={market.symbol} className="border-t border-border">
-                  <td className="px-4 py-3 font-mono text-sm text-subtle">{index + 1}</td>
-                  <td className="px-4 py-3 font-mono text-sm font-semibold">{market.symbol}</td>
-                  <td className="px-4 py-3 text-sm text-muted">{market.name}</td>
-                  <td className="px-4 py-3 font-mono text-sm tabular-nums">${formatPrice(market.price)}</td>
-                  <td className={cn("px-4 py-3 font-mono text-sm tabular-nums", up ? "text-up" : "text-down")}>
-                    {up ? "+" : ""}{market.change24h.toFixed(2)}%
-                  </td>
-                  <td className="px-4 py-3 font-mono text-[11px] uppercase tracking-wide text-subtle">
-                    {market.group === "bstock" ? "bStock" : "CEX"}
-                  </td>
-                </tr>
-              );
-            })}
-            {!loaded && ranked.length === 0
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-t border-border">
-                    <td className="px-4 py-3 text-sm text-subtle" colSpan={6}>
-                      Loading movers…
-                    </td>
-                  </tr>
-                ))
-              : null}
-          </tbody>
-        </table>
+    <section className="mt-8 space-y-10">
+      <div>
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+          24-hour tape
+        </p>
+        <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
+          Gainers and losers among major CEX tokens and bStocks, ranked by 24-hour change.
+        </p>
       </div>
 
-      {error && ranked.length === 0 && loaded ? (
-        <p className="mt-5 text-sm text-muted">
+      <div>
+        <h2 className="font-display text-2xl text-up">Gainers</h2>
+        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
+          Highest 24h % gains
+        </p>
+        <div className="mt-4">
+          <MoversTable
+            rows={gainers}
+            emptyLabel="No gainers on the tape right now."
+            loading={!loaded}
+          />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-2xl text-down">Losers</h2>
+        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
+          Largest 24h % declines
+        </p>
+        <div className="mt-4">
+          <MoversTable
+            rows={losers}
+            emptyLabel="No losers on the tape right now."
+            loading={!loaded}
+          />
+        </div>
+      </div>
+
+      {error && markets.length === 0 && loaded ? (
+        <p className="text-sm text-muted">
           Movers are temporarily unavailable. Please try again shortly.
         </p>
       ) : null}
