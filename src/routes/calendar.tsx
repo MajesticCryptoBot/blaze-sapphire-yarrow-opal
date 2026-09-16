@@ -74,12 +74,11 @@ function CalendarPage() {
       </Link>
 
       <header className="mt-6 max-w-3xl border-b border-border pb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">Week ahead</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">Week ahead · US only</p>
         <h1 className="mt-3 font-display text-4xl font-medium sm:text-5xl">The Calendar</h1>
         <p className="mt-4 font-news text-lg leading-[1.6] text-muted">
-          High-impact prints that move crypto and risk — CPI, payrolls, FOMC, and GDP.
-          Times are New York and UTC. Sourced from the live macro diary, with official
-          Fed and BLS dates as backup.
+          High-impact U.S. prints that move crypto and risk — CPI, payrolls, FOMC, and GDP.
+          Date and hour shown in 24-hour format (New York and UTC). Non-U.S. events are excluded.
         </p>
       </header>
 
@@ -88,7 +87,7 @@ function CalendarPage() {
       ) : error && events.length === 0 ? (
         <p className="mt-10 font-news text-base text-muted">The calendar is temporarily unavailable.</p>
       ) : grouped.length === 0 ? (
-        <p className="mt-10 font-news text-base text-muted">No major prints remain on this week’s tape.</p>
+        <p className="mt-10 font-news text-base text-muted">No major U.S. prints remain on this week’s tape.</p>
       ) : (
         <div className="mt-8 space-y-10">
           {grouped.map(([day, rows]) => (
