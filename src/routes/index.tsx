@@ -87,10 +87,10 @@ function Home() {
   const filtered = useMemo(() => {
     const inCategory =
       cat === "All" ? allArticles : allArticles.filter((a) => a.category === cat);
-    return filterAndRankArticles(inCategory, q).slice(0, 40);
+    return filterAndRankArticles(inCategory, q).slice(0, 10);
   }, [q, cat, allArticles]);
 
-  const [lead, ...rest] = filtered.slice(0, 20);
+  const [lead, ...rest] = filtered.slice(0, 10);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">

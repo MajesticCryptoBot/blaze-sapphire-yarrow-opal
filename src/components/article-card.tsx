@@ -1,7 +1,6 @@
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { ShareBar } from "@/components/share-bar";
-import { TagBadge } from "@/components/tag-badge";
 import { formatTime, type Article } from "@/lib/news";
 import { storyPath } from "@/lib/story-url";
 
@@ -54,8 +53,7 @@ export function ArticleCard({
       ) : null}
 
       <a href={storyHref} className="group block p-5 pb-3 sm:p-6 sm:pb-3">
-        <div className="flex items-center justify-between gap-3">
-          <TagBadge tag={article.tag} />
+        <div className="flex items-center justify-end gap-3">
           <time className="text-[11px] font-medium tabular-nums text-subtle">
             {formatTime(article.publishedAt)}
           </time>
