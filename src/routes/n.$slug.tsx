@@ -5,10 +5,9 @@ import { RelatedDesks } from "@/components/related-desks";
 import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
-import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
-import { parsePublicId, splitHeadline, tagFromText, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
+import { parsePublicId, splitHeadline, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
 import { storyPath } from "@/lib/story-url";
 
 export const Route = createFileRoute("/n/$slug")({
@@ -69,7 +68,6 @@ function ArticlePage() {
 
   const { headline, dek } = splitHeadline(post.text);
   const body = dek ? [dek] : [headline];
-  const tag = tagFromText(post.text);
   const path = storyPath(post.id);
 
   return (
@@ -78,7 +76,6 @@ function ArticlePage() {
 
       <article className="mt-6 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
-          <TagBadge tag={tag} />
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">Telegram</span>
           <time className="font-mono text-[11px] tabular-nums text-subtle">{formatTime(post.publishedAt)} UTC</time>
         </div>
