@@ -90,7 +90,7 @@ function Home() {
     return filterAndRankArticles(inCategory, q).slice(0, 10);
   }, [q, cat, allArticles]);
 
-  const [lead, ...rest] = filtered.slice(0, 10);
+  const [lead, ...rest] = filtered;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
