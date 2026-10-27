@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
 
 type StoryVideoProps = {
   id: number;
@@ -8,7 +7,7 @@ type StoryVideoProps = {
   size?: "wire" | "article" | "card";
 };
 
-export function StoryVideo({ id, mimeType = "video/mp4", videoUrl, size = "article" }: StoryVideoProps) {
+export function StoryVideo({ id, mimeType = "video/mp4", videoUrl }: StoryVideoProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const src = videoUrl || `/api/telegram-video?id=${id}`;
 
@@ -49,13 +48,10 @@ export function StoryVideo({ id, mimeType = "video/mp4", videoUrl, size = "artic
   }, [id, src]);
 
   return (
-    <div className="overflow-hidden rounded-md bg-elevated">
+    <div className="aspect-[16/9] w-full overflow-hidden rounded-md bg-black">
       <video
         ref={ref}
-        className={cn(
-          "w-full bg-black object-contain",
-          size === "card" ? "max-h-[220px]" : size === "wire" ? "max-h-[420px]" : "max-h-[560px]",
-        )}
+        className="h-full w-full bg-black object-contain"
         src={src}
         muted
         autoPlay

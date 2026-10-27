@@ -208,3 +208,197 @@ html[data-theme="light"] .glass-border {
 .desk-strip::-webkit-scrollbar {
   display: none;
 }
+
+/* ============================================================= */
+/* Ambient editorial background — scroll-parallax depth layers   */
+/* ============================================================= */
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient-parallax {
+  position: absolute;
+  inset: -25% 0;
+  will-change: transform;
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+}
+
+.ambient-blob-a {
+  width: 42rem;
+  height: 42rem;
+  top: -12%;
+  left: -8%;
+  background: radial-gradient(closest-side, rgba(100, 210, 255, 0.5), transparent 72%);
+  opacity: 0.3;
+  animation: ambient-drift-a 26s var(--ease-out) infinite alternate;
+}
+
+.ambient-blob-b {
+  width: 36rem;
+  height: 36rem;
+  top: 34%;
+  right: -12%;
+  background: radial-gradient(closest-side, rgba(48, 209, 88, 0.45), transparent 72%);
+  opacity: 0.24;
+  animation: ambient-drift-b 32s var(--ease-out) infinite alternate;
+}
+
+.ambient-blob-c {
+  width: 30rem;
+  height: 30rem;
+  bottom: -6%;
+  left: 28%;
+  background: radial-gradient(closest-side, rgba(255, 214, 10, 0.4), transparent 72%);
+  opacity: 0.16;
+  animation: ambient-drift-c 38s var(--ease-out) infinite alternate;
+}
+
+html[data-theme="light"] .ambient-blob-a {
+  opacity: 0.22;
+}
+html[data-theme="light"] .ambient-blob-b {
+  opacity: 0.18;
+}
+html[data-theme="light"] .ambient-blob-c {
+  opacity: 0.12;
+}
+
+.ambient-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 32%, black, transparent 78%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 32%, black, transparent 78%);
+}
+
+html[data-theme="light"] .ambient-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.ambient-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 130% 95% at 50% 0%, transparent 58%, rgba(0, 0, 0, 0.28));
+}
+
+html[data-theme="light"] .ambient-vignette {
+  background: radial-gradient(ellipse 130% 95% at 50% 0%, transparent 62%, rgba(0, 0, 0, 0.05));
+}
+
+@keyframes ambient-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(5rem, 3.5rem, 0) scale(1.14);
+  }
+}
+
+@keyframes ambient-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-4rem, -2.5rem, 0) scale(1);
+  }
+}
+
+@keyframes ambient-drift-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3.5rem, -3.5rem, 0) scale(1.18);
+  }
+}
+
+/* ============================================================= */
+/* Editorial side rails — wide-screen margin companions          */
+/* ============================================================= */
+.side-rail {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13rem;
+  z-index: 30;
+  display: none;
+}
+
+.side-rail-left {
+  left: 4.5rem;
+}
+
+.side-rail-right {
+  right: 1.75rem;
+}
+
+@media (min-width: 1760px) {
+  .side-rail {
+    display: block;
+  }
+}
+
+.side-rail-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-subtle);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.side-rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.side-rail-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.side-rail-headline {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.side-rail-headline:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.side-rail-link {
+  display: block;
+}
+
+.side-rail-link:hover .line-clamp-2 {
+  color: var(--color-azure);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob {
+    animation: none;
+  }
+  .ambient-parallax {
+    transform: none !important;
+  }
+}

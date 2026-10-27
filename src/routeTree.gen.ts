@@ -14,6 +14,7 @@ import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as GlossaryRouteImport } from './routes/glossary'
 import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as ApiFunFactsRouteImport } from './routes/api/fun-facts'
 import { Route as ApiMarketCalendarRouteImport } from './routes/api/market-calendar'
 import { Route as ApiMarketCandlesRouteImport } from './routes/api/market-candles'
 import { Route as ApiMarketChartsRouteImport } from './routes/api/market-charts'
@@ -49,6 +50,11 @@ const GlossaryRoute = GlossaryRouteImport.update({
 const MarketsRoute = MarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFunFactsRoute = ApiFunFactsRouteImport.update({
+  id: '/api/fun-facts',
+  path: '/api/fun-facts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMarketCalendarRoute = ApiMarketCalendarRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/glossary': typeof GlossaryRoute
   '/markets': typeof MarketsRoute
+  '/api/fun-facts': typeof ApiFunFactsRoute
   '/api/market-calendar': typeof ApiMarketCalendarRoute
   '/api/market-candles': typeof ApiMarketCandlesRoute
   '/api/market-charts': typeof ApiMarketChartsRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/glossary': typeof GlossaryRoute
   '/markets': typeof MarketsRoute
+  '/api/fun-facts': typeof ApiFunFactsRoute
   '/api/market-calendar': typeof ApiMarketCalendarRoute
   '/api/market-candles': typeof ApiMarketCandlesRoute
   '/api/market-charts': typeof ApiMarketChartsRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/glossary': typeof GlossaryRoute
   '/markets': typeof MarketsRoute
+  '/api/fun-facts': typeof ApiFunFactsRoute
   '/api/market-calendar': typeof ApiMarketCalendarRoute
   '/api/market-candles': typeof ApiMarketCandlesRoute
   '/api/market-charts': typeof ApiMarketChartsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/glossary'
     | '/markets'
+    | '/api/fun-facts'
     | '/api/market-calendar'
     | '/api/market-candles'
     | '/api/market-charts'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/glossary'
     | '/markets'
+    | '/api/fun-facts'
     | '/api/market-calendar'
     | '/api/market-candles'
     | '/api/market-charts'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/glossary'
     | '/markets'
+    | '/api/fun-facts'
     | '/api/market-calendar'
     | '/api/market-candles'
     | '/api/market-charts'
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   GlossaryRoute: typeof GlossaryRoute
   MarketsRoute: typeof MarketsRoute
+  ApiFunFactsRoute: typeof ApiFunFactsRoute
   ApiMarketCalendarRoute: typeof ApiMarketCalendarRoute
   ApiMarketCandlesRoute: typeof ApiMarketCandlesRoute
   ApiMarketChartsRoute: typeof ApiMarketChartsRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fun-facts': {
+      id: '/api/fun-facts'
+      path: '/api/fun-facts'
+      fullPath: '/api/fun-facts'
+      preLoaderRoute: typeof ApiFunFactsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/market-calendar': {
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   GlossaryRoute: GlossaryRoute,
   MarketsRoute: MarketsRoute,
+  ApiFunFactsRoute: ApiFunFactsRoute,
   ApiMarketCalendarRoute: ApiMarketCalendarRoute,
   ApiMarketCandlesRoute: ApiMarketCandlesRoute,
   ApiMarketChartsRoute: ApiMarketChartsRoute,

@@ -1,7 +1,9 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "@/lib/auth/provider";
+import { AmbientBackground } from "@/components/ambient-background";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SideRails } from "@/components/side-rails";
 import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -56,11 +58,12 @@ export const Route = createRootRoute({
         />
       </head>
       <body className="bg-bg text-foreground">
+        <AmbientBackground />
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
             <SiteNavProvider>
-              <div className="flex min-h-dvh flex-col">
+              <div className="relative z-10 flex min-h-dvh flex-col">
                 <SiteHeader />
                 <TickerBar />
                 <div className="flex min-h-0 flex-1">
@@ -72,6 +75,7 @@ export const Route = createRootRoute({
                   </div>
                 </div>
               </div>
+              <SideRails />
             </SiteNavProvider>
           </ThemeProvider>
         </AuthProvider>

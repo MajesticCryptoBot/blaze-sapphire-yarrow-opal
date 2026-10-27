@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { WatchToggle } from "@/components/watch-toggle";
-import { getWeeklyFacts } from "@/lib/crypto-facts";
+import { getWeeklyFacts, type CryptoFact } from "@/lib/crypto-facts";
 import { matchesDesk, type DeskSection } from "@/lib/desk-sections";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { type Article } from "@/lib/news";
@@ -213,6 +213,78 @@ function TopMoversPanel() {
   );
 }
 
+type FunFactsPayload = {
+  facts: CryptoFact[];
+  freshCount: number;
+  source: "wikipedia+notebook" | "notebook";
+  updatedAt: string;
+  nextUpdateAt: string;
+};
+
+/**
+ * Fresh-edition hook: the /api/fun-facts endpoint rotates in a new batch of
+ * facts every ~60 hours (two to three days), mixing Wikipedia "On this day"
+ * material with the classic notebook. Falls back to the weekly notebook
+ * rotation if the endpoint is unreachable, so the section never goes blank.
+ */
+function useFunFacts(enabled: boolean) {
+  const [edition, setEdition] = useState<FunFactsPayload | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch("/api/fun-facts", { cache: "no-store" });
+        if (!response.ok) throw new Error("fun-facts request failed");
+        const payload = (await response.json()) as FunFactsPayload;
+        if (active && Array.isArray(payload.facts) && payload.facts.length > 0) {
+          setEdition(payload);
+        }
+      } catch {
+        // Keep the previous edition (or the weekly fallback below).
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 30 * 60 * 1000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [enabled]);
+
+  return edition;
+}
+
+function FactCard({ fact, fresh }: { fact: CryptoFact; fresh: boolean }) {
+  return (
+    <article className="rounded-lg border border-border bg-surface p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{fact.year}</p>
+        {fresh ? (
+          <span className="rounded-sm border border-azure/40 bg-azure/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-azure">
+            Fresh
+          </span>
+        ) : fact.tone === "humor" ? (
+          <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-subtle">
+            Humor
+          </span>
+        ) : null}
+      </div>
+      <h2 className="mt-2 font-display text-xl font-medium">{fact.title}</h2>
+      <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted">{fact.body}</p>
+      <a
+        href={fact.href}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 inline-flex h-11 items-center text-sm text-azure hover:underline"
+      >
+        {fact.source} →
+      </a>
+    </article>
+  );
+}
+
 export function DeskPage({ section }: { section: DeskSection }) {
   const [posts, setPosts] = useState<TelegramPost[] | null>(null);
 
@@ -243,6 +315,25 @@ export function DeskPage({ section }: { section: DeskSection }) {
 
   const weeklyFacts = useMemo(() => getWeeklyFacts(8), []);
   const canWatch = section.slug !== "news" && section.slug !== "top-movers";
+  const isFunFacts = section.slug === "fun-facts";
+  const edition = useFunFacts(isFunFacts);
+  const funFacts = edition?.facts ?? weeklyFacts;
+  const freshTitles = useMemo(
+    () => new Set((edition?.facts ?? []).slice(0, edition?.freshCount ?? 0).map((f) => f.title)),
+    [edition],
+  );
+  const refreshedLabel = useMemo(() => {
+    if (!edition) return null;
+    const when = new Date(edition.updatedAt).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+    const next = new Date(edition.nextUpdateAt).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+    return `Refreshed ${when} · next edition around ${next}`;
+  }, [edition]);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -268,36 +359,25 @@ export function DeskPage({ section }: { section: DeskSection }) {
 
       {section.slug === "top-movers" ? <TopMoversPanel /> : null}
 
-      {section.slug === "fun-facts" ? (
+      {isFunFacts ? (
         <section className="mt-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-            This week’s notebook
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              This week’s notebook
+            </p>
+            {refreshedLabel ? (
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                {refreshedLabel}
+              </p>
+            ) : null}
+          </div>
           <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-            For the curious
+            For the curious — a fresh edition every two to three days, mixing new entries from the
+            wire of history with the desk’s classic notebook.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {weeklyFacts.map((fact) => (
-              <article key={fact.title} className="rounded-lg border border-border bg-surface p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{fact.year}</p>
-                  {fact.tone === "humor" ? (
-                    <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-subtle">
-                      Humor
-                    </span>
-                  ) : null}
-                </div>
-                <h2 className="mt-2 font-display text-xl font-medium">{fact.title}</h2>
-                <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted">{fact.body}</p>
-                <a
-                  href={fact.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex h-11 items-center text-sm text-azure hover:underline"
-                >
-                  {fact.source} →
-                </a>
-              </article>
+            {funFacts.map((fact) => (
+              <FactCard key={fact.title} fact={fact} fresh={freshTitles.has(fact.title)} />
             ))}
           </div>
         </section>
@@ -306,17 +386,17 @@ export function DeskPage({ section }: { section: DeskSection }) {
       {section.slug === "top-movers" ? null : posts === null ? (
         <p className="mt-10 font-news text-base text-muted">Loading this desk…</p>
       ) : !lead ? (
-        section.slug === "fun-facts" ? null : (
+        isFunFacts ? null : (
           <p className="mt-10 font-news text-base text-muted">No matching briefs on this desk yet.</p>
         )
       ) : (
         <>
-          {section.slug === "fun-facts" ? (
+          {isFunFacts ? (
             <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
               From the tape
             </p>
           ) : null}
-          <div className={section.slug === "fun-facts" ? "mt-4" : "mt-8"}>
+          <div className={isFunFacts ? "mt-4" : "mt-8"}>
             <ArticleCard article={lead} featured from={section.slug} />
           </div>
           {rest.length > 0 ? (

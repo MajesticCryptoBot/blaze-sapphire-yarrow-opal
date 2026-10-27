@@ -27,7 +27,9 @@ export function ArticleCard({
   const path = storyPath(article._telegramId ?? slug);
   const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
-  const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
+  // Photos show on EVERY card that has one (featured or grid) — the wire reads
+  // like a professional picture desk, not a wall of text.
+  const hasPhotos = Boolean(article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
 
   return (

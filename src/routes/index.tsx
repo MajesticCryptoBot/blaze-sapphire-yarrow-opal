@@ -87,7 +87,7 @@ function Home() {
   const filtered = useMemo(() => {
     const inCategory =
       cat === "All" ? allArticles : allArticles.filter((a) => a.category === cat);
-    return filterAndRankArticles(inCategory, q).slice(0, 10);
+    return filterAndRankArticles(inCategory, q).slice(0, 20);
   }, [q, cat, allArticles]);
 
   const [lead, ...rest] = filtered;
