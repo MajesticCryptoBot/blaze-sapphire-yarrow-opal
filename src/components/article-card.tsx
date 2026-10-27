@@ -2,6 +2,7 @@ import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { ShareBar } from "@/components/share-bar";
 import { formatTime, type Article } from "@/lib/news";
+import { fitCardPhotos } from "@/lib/photo-fit";
 import { storyPath } from "@/lib/story-url";
 
 type ArticleWithTelegram = Article & {
@@ -12,6 +13,10 @@ type ArticleWithTelegram = Article & {
   _videoMimeType?: string | null;
   _videoUrl?: string | null;
   _messageUrl?: string | null;
+  _photoW?: number | null;
+  _photoH?: number | null;
+  _photo2W?: number | null;
+  _photo2H?: number | null;
 };
 
 export function ArticleCard({
@@ -30,9 +35,20 @@ export function ArticleCard({
   const path = storyPath(article._telegramId ?? slug);
   const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
-  // Photos render only where they are explicitly requested (the homepage deck);
-  // category desks and other listings keep the clean text-first card.
-  const hasPhotos = withPhoto && Boolean(article._telegramId && article._hasPhoto);
+  // "Check size, fit, or drop": the photo is measured against the uniform
+  // 16:9 deck frame and only earns a card slot when at least 80% of it stays
+  // visible. Photos that fail keep the card text-first; their photo lives in
+  // the full story view. Photos are a homepage treatment only — section desks
+  // stay text-first.
+  const fit = fitCardPhotos({
+    hasPhoto: Boolean(article._hasPhoto),
+    hasPhoto2: Boolean(article._hasPhoto2),
+    photoW: article._photoW,
+    photoH: article._photoH,
+    photo2W: article._photo2W,
+    photo2H: article._photo2H,
+  });
+  const hasPhotos = withPhoto && fit.mode !== "none";
   const hasMedia = hasVideo || hasPhotos;
 
   return (
@@ -51,7 +67,14 @@ export function ArticleCard({
               id={article._telegramId}
               hasPhoto={Boolean(article._hasPhoto)}
               hasPhoto2={Boolean(article._hasPhoto2)}
-              size={featured ? "article" : "wire"}
+              variant="deck"
+              eager={featured}
+              photoW={article._photoW}
+              photoH={article._photoH}
+              photo2W={article._photo2W}
+              photo2H={article._photo2H}
+              mode={fit.mode === "pair" ? "pair" : "single"}
+              solo={fit.solo}
             />
           )}
         </div>

@@ -26,6 +26,10 @@ function toArticle(post: TelegramPost): Article & {
   _videoMimeType: string | null;
   _videoUrl: string | null;
   _messageUrl: string | null;
+  _photoW: number | null;
+  _photoH: number | null;
+  _photo2W: number | null;
+  _photo2H: number | null;
 } {
   const { headline, dek } = splitHeadline(post.text);
   return {
@@ -46,6 +50,10 @@ function toArticle(post: TelegramPost): Article & {
     _videoMimeType: post.videoMimeType,
     _videoUrl: post.videoUrl,
     _messageUrl: post.messageUrl,
+    _photoW: post.photoW,
+    _photoH: post.photoH,
+    _photo2W: post.photo2W,
+    _photo2H: post.photo2H,
   };
 }
 

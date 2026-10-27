@@ -92,7 +92,12 @@ function ArticlePage() {
               id={post.id}
               hasPhoto={post.hasPhoto}
               hasPhoto2={post.hasPhoto2}
-              size="article"
+              variant="article"
+              eager
+              photoW={post.photoW}
+              photoH={post.photoH}
+              photo2W={post.photo2W}
+              photo2H={post.photo2H}
             />
           </div>
         ) : null}

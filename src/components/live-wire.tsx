@@ -7,6 +7,7 @@ import { StoryVideo } from "@/components/story-video";
 import { useMarketCharts } from "@/components/use-market-charts";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { formatTime } from "@/lib/news";
+import { fitCardPhotos } from "@/lib/photo-fit";
 import { storyPath } from "@/lib/story-url";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,19 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
 
   const headline = latest ? splitHeadline(latest.text).headline : null;
   const dek = latest ? splitHeadline(latest.text).dek : null;
+  // Same "check size, fit, or drop" gate as the deck: the featured wire slot
+  // only shows the photo when it fits the uniform 16:9 frame; otherwise the
+  // photo lives in the full story view.
+  const fit = latest
+    ? fitCardPhotos({
+        hasPhoto: latest.hasPhoto,
+        hasPhoto2: latest.hasPhoto2,
+        photoW: latest.photoW,
+        photoH: latest.photoH,
+        photo2W: latest.photo2W,
+        photo2H: latest.photo2H,
+      })
+    : { mode: "none" as const, solo: 1 as const };
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -86,13 +100,20 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
               <div className="mb-4">
                 <StoryVideo id={latest.id} mimeType={latest.videoMimeType} videoUrl={latest.videoUrl} size="wire" />
               </div>
-            ) : latest.hasPhoto ? (
+            ) : latest.hasPhoto && fit.mode !== "none" ? (
               <div className="mb-4">
                 <StoryPhotos
                   id={latest.id}
                   hasPhoto={latest.hasPhoto}
                   hasPhoto2={latest.hasPhoto2}
-                  size="wire"
+                  variant="deck"
+                  eager
+                  photoW={latest.photoW}
+                  photoH={latest.photoH}
+                  photo2W={latest.photo2W}
+                  photo2H={latest.photo2H}
+                  mode={fit.mode === "pair" ? "pair" : "single"}
+                  solo={fit.solo}
                 />
               </div>
             ) : null}

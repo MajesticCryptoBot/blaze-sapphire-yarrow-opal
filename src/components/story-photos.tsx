@@ -4,74 +4,123 @@ type StoryPhotosProps = {
   id: number;
   hasPhoto: boolean;
   hasPhoto2?: boolean;
-  size?: "wire" | "article";
+  /**
+   * "deck"    — one uniform 16:9 frame, photo fills it edge to edge.
+   *             Only photos that passed the fit gate (src/lib/photo-fit.ts)
+   *             may be routed here: at least 80% of the photo stays visible,
+   *             so object-cover's residual crop is imperceptible and nothing
+   *             meaningful is ever hidden.
+   * "article" — the frame adapts to the photo: rendered at the photo's
+   *             intrinsic ratio (when known), never cropped, on a quiet
+   *             elevated surface. This is where non-fitting photos live,
+   *             full and uncropped.
+   */
+  variant?: "deck" | "article";
+  /** Above-the-fold media (featured story / article hero) loads eagerly. */
+  eager?: boolean;
+  /** Intrinsic pixel dimensions — keep the article view at the photo's own ratio. */
+  photoW?: number | null;
+  photoH?: number | null;
+  photo2W?: number | null;
+  photo2H?: number | null;
+  /** "pair" renders both photos side by side; "single" renders only `solo`. */
+  mode?: "single" | "pair";
+  solo?: 1 | 2;
 };
 
 /**
- * Uniform editorial media block.
+ * Editorial media block — two strict presentation modes, no letterboxing,
+ * no blurred backdrops, nothing "cinematic".
  *
- * Every photo on the site — card, featured story, or article hero — renders in
- * the exact same 16:9 frame, so decks and grids line up with the clean rhythm
- * of a professional news site.
- *
- * Framing rule: `object-contain`, never `object-cover`. Wire photos often
- * carry information (logos, tickers, chart labels, headlines inside the
- * image), so cropping to fill the frame silently hides parts of the story.
- * Instead the photo is shown whole, letterboxed over a blurred, scaled copy of
- * itself — the "cinematic fill" treatment used by premium news apps. The frame
- * stays perfectly uniform and no information is ever cut away.
- *
- * Photo pairs split the same frame into two equal halves (Telegram album
+ * Photo pairs split the deck frame into two equal halves (Telegram album
  * style), so a two-photo story occupies exactly the same height as a
  * one-photo story.
  */
-function FramedPhoto({ src, loading }: { src: string; loading: "eager" | "lazy" }) {
+function DeckPhoto({ src, eager }: { src: string; eager: boolean }) {
   return (
-    <div className="relative h-full w-full bg-elevated">
-      {/* Blurred self-backdrop: fills the letterbox area so the frame never
-          shows flat bars, while the real photo above stays 100% uncropped. */}
-      <img
-        src={src}
-        alt=""
-        aria-hidden
-        loading={loading}
-        decoding="async"
-        className="absolute inset-0 h-full w-full scale-125 object-cover opacity-45 blur-2xl"
-      />
-      <img
-        src={src}
-        alt=""
-        loading={loading}
-        decoding="async"
-        className="relative h-full w-full object-contain"
-      />
-    </div>
+    <img
+      src={src}
+      alt=""
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      className="h-full w-full object-cover"
+    />
   );
 }
 
-export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: StoryPhotosProps) {
+function ArticlePhoto({
+  src,
+  eager,
+  width,
+  height,
+}: {
+  src: string;
+  eager: boolean;
+  width?: number | null;
+  height?: number | null;
+}) {
+  const known = Boolean(width && height && width > 0 && height > 0);
+  return (
+    <img
+      src={src}
+      alt=""
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      style={known ? { aspectRatio: `${width} / ${height}` } : undefined}
+      className={cn(
+        "mx-auto block max-h-[75vh] rounded-md bg-elevated object-contain",
+        known ? "w-full" : "max-w-full",
+      )}
+    />
+  );
+}
+
+export function StoryPhotos({
+  id,
+  hasPhoto,
+  hasPhoto2 = false,
+  variant = "deck",
+  eager = false,
+  photoW,
+  photoH,
+  photo2W,
+  photo2H,
+  mode = "single",
+  solo = 1,
+}: StoryPhotosProps) {
   if (!hasPhoto) return null;
 
   const first = `/api/telegram-photo?id=${id}&photo=1`;
   const second = `/api/telegram-photo?id=${id}&photo=2`;
-  // Above-the-fold media (featured story / article hero) loads eagerly;
-  // grid-card media lazy-loads so a 20-story deck stays fast.
-  const loading = size === "article" ? "eager" : "lazy";
 
-  if (hasPhoto2) {
+  if (variant === "article") {
+    if (hasPhoto2) {
+      return (
+        <div className="grid w-full grid-cols-2 gap-[3px]">
+          <ArticlePhoto src={first} eager={eager} width={photoW} height={photoH} />
+          <ArticlePhoto src={second} eager={eager} width={photo2W} height={photo2H} />
+        </div>
+      );
+    }
+    return <ArticlePhoto src={first} eager={eager} width={photoW} height={photoH} />;
+  }
+
+  // Deck mode — uniform 16:9 card frame.
+  if (mode === "pair" && hasPhoto2) {
     return (
-      <div className={cn("aspect-[16/9] w-full overflow-hidden rounded-md")}>
+      <div className="aspect-[16/9] w-full overflow-hidden rounded-md">
         <div className="grid h-full w-full grid-cols-2 gap-[3px]">
-          <FramedPhoto src={first} loading={loading} />
-          <FramedPhoto src={second} loading={loading} />
+          <DeckPhoto src={first} eager={eager} />
+          <DeckPhoto src={second} eager={eager} />
         </div>
       </div>
     );
   }
 
+  const soloSrc = solo === 2 ? second : first;
   return (
-    <div className={cn("aspect-[16/9] w-full overflow-hidden rounded-md")}>
-      <FramedPhoto src={first} loading={loading} />
+    <div className="aspect-[16/9] w-full overflow-hidden rounded-md">
+      <DeckPhoto src={soloSrc} eager={eager} />
     </div>
   );
 }
