@@ -12,14 +12,43 @@ type StoryPhotosProps = {
  *
  * Every photo on the site — card, featured story, or article hero — renders in
  * the exact same 16:9 frame, so decks and grids line up with the clean rhythm
- * of a professional news site. `object-cover` center-crops just enough to fill
- * the frame without distortion (the standard used by major news outlets); the
- * crop is gentle because 16:9 matches the shape of most wire photos.
+ * of a professional news site.
+ *
+ * Framing rule: `object-contain`, never `object-cover`. Wire photos often
+ * carry information (logos, tickers, chart labels, headlines inside the
+ * image), so cropping to fill the frame silently hides parts of the story.
+ * Instead the photo is shown whole, letterboxed over a blurred, scaled copy of
+ * itself — the "cinematic fill" treatment used by premium news apps. The frame
+ * stays perfectly uniform and no information is ever cut away.
  *
  * Photo pairs split the same frame into two equal halves (Telegram album
  * style), so a two-photo story occupies exactly the same height as a
  * one-photo story.
  */
+function FramedPhoto({ src, loading }: { src: string; loading: "eager" | "lazy" }) {
+  return (
+    <div className="relative h-full w-full bg-elevated">
+      {/* Blurred self-backdrop: fills the letterbox area so the frame never
+          shows flat bars, while the real photo above stays 100% uncropped. */}
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        loading={loading}
+        decoding="async"
+        className="absolute inset-0 h-full w-full scale-125 object-cover opacity-45 blur-2xl"
+      />
+      <img
+        src={src}
+        alt=""
+        loading={loading}
+        decoding="async"
+        className="relative h-full w-full object-contain"
+      />
+    </div>
+  );
+}
+
 export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: StoryPhotosProps) {
   if (!hasPhoto) return null;
 
@@ -31,36 +60,18 @@ export function StoryPhotos({ id, hasPhoto, hasPhoto2 = false, size = "wire" }: 
 
   if (hasPhoto2) {
     return (
-      <div className="aspect-[16/9] w-full overflow-hidden rounded-md bg-elevated">
+      <div className={cn("aspect-[16/9] w-full overflow-hidden rounded-md")}>
         <div className="grid h-full w-full grid-cols-2 gap-[3px]">
-          <img
-            src={first}
-            alt=""
-            loading={loading}
-            decoding="async"
-            className="h-full w-full object-cover object-center"
-          />
-          <img
-            src={second}
-            alt=""
-            loading={loading}
-            decoding="async"
-            className="h-full w-full object-cover object-center"
-          />
+          <FramedPhoto src={first} loading={loading} />
+          <FramedPhoto src={second} loading={loading} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="aspect-[16/9] w-full overflow-hidden rounded-md bg-elevated">
-      <img
-        src={first}
-        alt=""
-        loading={loading}
-        decoding="async"
-        className={cn("h-full w-full object-cover object-center", size === "article" && "object-[center_35%]")}
-      />
+    <div className={cn("aspect-[16/9] w-full overflow-hidden rounded-md")}>
+      <FramedPhoto src={first} loading={loading} />
     </div>
   );
 }

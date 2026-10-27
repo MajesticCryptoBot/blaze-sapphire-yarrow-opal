@@ -4,10 +4,9 @@ import { funFactsPayload } from "@/lib/fun-facts-server";
 /**
  * /api/fun-facts — fresh-edition Fun Facts feed.
  *
- * A new edition rotates in every ~60 hours (two to three days). Fresh entries
- * come from Wikipedia's "On this day" feed filtered to money / markets /
- * technology history; the classic notebook fills the rest and keeps the page
- * full if the feed is unreachable. See src/lib/fun-facts-server.ts.
+ * A new edition rotates in every ~60 hours (two to three days). Every fact
+ * comes exclusively from the desk's curated crypto notebook — no generic
+ * history feeds. See src/lib/fun-facts-server.ts.
  */
 export const Route = createFileRoute("/api/fun-facts")({
   server: {

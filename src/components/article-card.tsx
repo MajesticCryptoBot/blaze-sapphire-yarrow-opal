@@ -18,18 +18,21 @@ export function ArticleCard({
   article,
   featured = false,
   from = "",
+  withPhoto = false,
 }: {
   article: ArticleWithTelegram;
   featured?: boolean;
   from?: string;
+  /** Photos are a homepage treatment only — section desks stay text-first. */
+  withPhoto?: boolean;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
   const path = storyPath(article._telegramId ?? slug);
   const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
-  // Photos show on EVERY card that has one (featured or grid) — the wire reads
-  // like a professional picture desk, not a wall of text.
-  const hasPhotos = Boolean(article._telegramId && article._hasPhoto);
+  // Photos render only where they are explicitly requested (the homepage deck);
+  // category desks and other listings keep the clean text-first card.
+  const hasPhotos = withPhoto && Boolean(article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
 
   return (

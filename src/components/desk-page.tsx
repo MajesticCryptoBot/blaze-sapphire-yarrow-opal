@@ -216,15 +216,15 @@ function TopMoversPanel() {
 type FunFactsPayload = {
   facts: CryptoFact[];
   freshCount: number;
-  source: "wikipedia+notebook" | "notebook";
+  source: "notebook";
   updatedAt: string;
   nextUpdateAt: string;
 };
 
 /**
  * Fresh-edition hook: the /api/fun-facts endpoint rotates in a new batch of
- * facts every ~60 hours (two to three days), mixing Wikipedia "On this day"
- * material with the classic notebook. Falls back to the weekly notebook
+ * crypto-only facts every ~60 hours (two to three days), drawn exclusively
+ * from the desk's curated notebook. Falls back to the weekly notebook
  * rotation if the endpoint is unreachable, so the section never goes blank.
  */
 function useFunFacts(enabled: boolean) {
@@ -363,7 +363,7 @@ export function DeskPage({ section }: { section: DeskSection }) {
         <section className="mt-8">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-              This week’s notebook
+              Current edition
             </p>
             {refreshedLabel ? (
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
@@ -372,8 +372,9 @@ export function DeskPage({ section }: { section: DeskSection }) {
             ) : null}
           </div>
           <p className="mt-2 max-w-2xl font-news text-sm leading-relaxed text-muted">
-            For the curious — a fresh edition every two to three days, mixing new entries from the
-            wire of history with the desk’s classic notebook.
+            For the curious — a fresh edition every two to three days, drawn
+            exclusively from the desk’s crypto notebook: Bitcoin, Ethereum,
+            markets, and the lore behind them.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {funFacts.map((fact) => (

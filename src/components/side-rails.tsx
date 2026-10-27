@@ -1,64 +1,19 @@
 import { useEffect, useState } from "react";
 import { formatTime } from "@/lib/news";
-import { fetchBinanceMarkets, PRICE_REFRESH_MS, type MarketQuote } from "@/lib/binance-markets";
 import { splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { storyPath } from "@/lib/story-url";
 
 /**
- * Editorial side rails — quiet, useful filler for the wide-screen margins.
+ * Editorial side rail — a quiet, useful companion for the wide-screen margin.
  *
- * They only appear on viewports wide enough to have real blank space
- * (≥ 1760px), so they never crowd the reading column. The left rail carries a
- * compact market snapshot; the right rail lists the newest headlines. Both
- * hide themselves on any fetch failure — they decorate, never disturb.
+ * Only the newest-headlines rail remains: the token-price rail that used to
+ * sit on the left duplicated the ticker bar and collided with the nav drawer
+ * when it opened, so it was removed. This rail appears only on viewports wide
+ * enough to have real blank space (≥ 1760px), hides itself on any fetch
+ * failure — it decorates, never disturbs.
  */
 
 const RAIL_REFRESH_MS = 60_000;
-const MAJORS = ["BTC", "ETH", "SOL", "XRP", "BNB"];
-
-function formatPrice(value: number) {
-  if (value >= 1000) return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  if (value >= 1) return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  return value.toLocaleString("en-US", { maximumFractionDigits: 4 });
-}
-
-function useMarkets(enabled: boolean) {
-  const [rows, setRows] = useState<MarketQuote[]>([]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await fetch("/api/market-prices", { cache: "no-store" });
-        if (response.ok) {
-          const payload = (await response.json()) as { data?: MarketQuote[] };
-          const data = payload.data ?? [];
-          if (active && data.length > 0) {
-            setRows(data);
-            return;
-          }
-        }
-      } catch {
-        // fall through
-      }
-      try {
-        const data = await fetchBinanceMarkets();
-        if (active && data.length > 0) setRows(data);
-      } catch {
-        // leave the rail empty — it hides itself
-      }
-    };
-    void load();
-    const timer = window.setInterval(load, PRICE_REFRESH_MS);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [enabled]);
-
-  return rows;
-}
 
 function useHeadlines(enabled: boolean) {
   const [posts, setPosts] = useState<TelegramPost[]>([]);
@@ -85,40 +40,6 @@ function useHeadlines(enabled: boolean) {
   }, [enabled]);
 
   return posts;
-}
-
-function MarketRail() {
-  const rows = useMarkets(true);
-  const picked = MAJORS.map((symbol) => rows.find((row) => row.symbol === symbol)).filter(
-    (row): row is MarketQuote => Boolean(row),
-  );
-  const fallback = picked.length > 0 ? picked : rows.filter((r) => r.group === "crypto").slice(0, 5);
-  if (fallback.length === 0) return null;
-
-  return (
-    <aside className="side-rail side-rail-left" aria-label="Market snapshot">
-      <p className="side-rail-label">Markets · live</p>
-      <ul className="side-rail-list">
-        {fallback.map((row) => {
-          const up = row.change24h >= 0;
-          return (
-            <li key={row.symbol} className="side-rail-row">
-              <span className="font-mono text-[11px] font-semibold text-foreground">{row.symbol}</span>
-              <span className="ml-auto font-mono text-[11px] tabular-nums text-muted">
-                {formatPrice(row.price)}
-              </span>
-              <span
-                className={`w-14 text-right font-mono text-[10px] tabular-nums ${up ? "text-up" : "text-down"}`}
-              >
-                {up ? "+" : ""}
-                {row.change24h.toFixed(2)}%
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </aside>
-  );
 }
 
 function HeadlinesRail() {
@@ -151,10 +72,5 @@ function HeadlinesRail() {
 }
 
 export function SideRails() {
-  return (
-    <>
-      <MarketRail />
-      <HeadlinesRail />
-    </>
-  );
+  return <HeadlinesRail />;
 }
