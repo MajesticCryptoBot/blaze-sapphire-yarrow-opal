@@ -1,11 +1,15 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { GlossaryText } from "@/components/glossary-text";
+import { RelatedDesks } from "@/components/related-desks";
+import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
-import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
+import { parsePublicId, splitHeadline, tagFromText, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
+import { storyPath } from "@/lib/story-url";
 
 export const Route = createFileRoute("/n/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -14,13 +18,19 @@ export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
     const id = parsePublicId(params.slug);
     if (id === null) return { post: null as TelegramPost | null };
-
-    const response = await fetch(`/api/news/${id}`);
-    if (!response.ok) return { post: null as TelegramPost | null };
-    const payload = (await response.json()) as { post?: TelegramPost };
-    return { post: payload.post ?? null };
+    try {
+      const post = await getTelegramPost(id);
+      return { post };
+    } catch (error) {
+      console.error("[story]", error instanceof Error ? error.message : error);
+      return { post: null as TelegramPost | null };
+    }
   },
-  head: () => ({ meta: [{ title: "ASP News" }] }),
+  head: ({ loaderData }) => {
+    const text = loaderData?.post?.text ?? "";
+    const headline = text ? splitHeadline(text).headline : "ASP News";
+    return { meta: [{ title: `${headline} — ASP News` }] };
+  },
   component: ArticlePage,
 });
 
@@ -60,6 +70,7 @@ function ArticlePage() {
   const { headline, dek } = splitHeadline(post.text);
   const body = dek ? [dek] : [headline];
   const tag = tagFromText(post.text);
+  const path = storyPath(post.id);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -76,7 +87,7 @@ function ArticlePage() {
 
         {post.hasVideo ? (
           <div className="mt-6">
-            <StoryVideo id={post.id} mimeType={post.videoMimeType} size="article" />
+            <StoryVideo id={post.id} mimeType={post.videoMimeType} videoUrl={post.videoUrl} size="article" />
           </div>
         ) : post.hasPhoto ? (
           <div className="mt-6">
@@ -90,8 +101,18 @@ function ArticlePage() {
         ) : null}
 
         <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground">
-          {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {body.map((paragraph, index) => (
+            <p key={index}>
+              <GlossaryText text={paragraph} />
+            </p>
+          ))}
         </div>
+
+        <div className="mt-6 border-t border-border pt-2">
+          <ShareBar title={headline} path={path} />
+        </div>
+
+        <RelatedDesks text={post.text} />
 
         {post.messageUrl ? (
           <div className="mt-8 rounded-md border border-border bg-surface p-4">

@@ -1,11 +1,13 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ShareBar } from "@/components/share-bar";
 import { Sparkline } from "@/components/sparkline";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { useMarketCharts } from "@/components/use-market-charts";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { formatTime } from "@/lib/news";
+import { storyPath } from "@/lib/story-url";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
 
@@ -82,7 +84,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <article className="py-5">
             {latest.hasVideo ? (
               <div className="mb-4">
-                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} size="wire" />
+                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} videoUrl={latest.videoUrl} size="wire" />
               </div>
             ) : latest.hasPhoto ? (
               <div className="mb-4">
@@ -113,6 +115,9 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
               >
                 Telegram <ExternalLink className="size-3" />
               </a>
+            </div>
+            <div className="mt-2">
+              <ShareBar title={headline ?? "ASP News"} path={storyPath(latest.id)} />
             </div>
           </article>
         )}

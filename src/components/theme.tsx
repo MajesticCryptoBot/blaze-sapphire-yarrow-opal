@@ -13,6 +13,12 @@ export type ThemeName = "dark" | "light";
 
 const STORAGE_KEY = "asp-theme";
 
+/** Matches --color-bg in styles.css for each theme */
+const THEME_COLORS: Record<ThemeName, string> = {
+  dark: "#0b0b0d",
+  light: "#f5f5f7",
+};
+
 type ThemeContextValue = {
   theme: ThemeName;
   toggle: () => void;
@@ -20,10 +26,34 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function setMeta(name: string, content: string) {
+  let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.name = name;
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
 function applyTheme(theme: ThemeName) {
   const root = document.documentElement;
+  const color = THEME_COLORS[theme];
+
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+  // Explicit solid colors so Safari 26 Liquid Glass samples the correct tint
+  // (theme-color meta is ignored on iOS 26; body / sticky bg are used instead).
+  root.style.backgroundColor = color;
+  if (document.body) {
+    document.body.style.backgroundColor = color;
+  }
+
+  setMeta("theme-color", color);
+  setMeta(
+    "apple-mobile-web-app-status-bar-style",
+    theme === "light" ? "default" : "black-translucent",
+  );
 }
 
 export function readStoredTheme(): ThemeName {
@@ -76,7 +106,11 @@ export function ThemeToggle() {
       title={`Switch to ${next} mode`}
       className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure"
     >
-      {theme === "dark" ? <Sun className="size-4" strokeWidth={1.8} /> : <Moon className="size-4" strokeWidth={1.8} />}
+      {theme === "dark" ? (
+        <Sun className="size-4" strokeWidth={1.8} />
+      ) : (
+        <Moon className="size-4" strokeWidth={1.8} />
+      )}
     </button>
   );
 }

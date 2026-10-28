@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 
-const INGEST_VERSION = "ASP-INGEST-V13-VIDEO-20260909";
+const INGEST_VERSION = "ASP-INGEST-V14-BLOB-VIDEO-20260911";
 const CANONICAL_CHANNEL = "AlphaSignalsPro";
 const MAX_PHOTO_BASE64 = 4_000_000;
 const MAX_VIDEO_BASE64 = 4_000_000;
@@ -27,6 +27,7 @@ async function ensureVideoColumns(sql: Awaited<ReturnType<typeof getSql>>) {
   const names = new Set(columns.map((row) => String(row.name)));
   if (!names.has("video_data")) await sql.query("ALTER TABLE telegram_posts ADD COLUMN video_data BLOB");
   if (!names.has("video_mime_type")) await sql.query("ALTER TABLE telegram_posts ADD COLUMN video_mime_type TEXT");
+  if (!names.has("video_url")) await sql.query("ALTER TABLE telegram_posts ADD COLUMN video_url TEXT");
 }
 
 export const Route = createFileRoute("/api/news-ingest-v2")({
@@ -53,6 +54,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           photoMimeType2?: string | null;
           videoBase64?: string | null;
           videoMimeType?: string | null;
+          videoUrl?: string | null;
         };
 
         try {
@@ -70,6 +72,9 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         const photoBase64 = body.photoBase64?.trim() || null;
         const photoBase64_2 = body.photoBase64_2?.trim() || body.photoBase642?.trim() || null;
         const videoBase64 = body.videoBase64?.trim() || null;
+        const videoUrl = typeof body.videoUrl === "string" && body.videoUrl.trim()
+          ? body.videoUrl.trim()
+          : null;
         const photoBuffer = photoBase64 ? Buffer.from(photoBase64, "base64") : null;
         const photoBuffer2 = photoBase64_2 ? Buffer.from(photoBase64_2, "base64") : null;
         const videoBuffer = videoBase64 ? Buffer.from(videoBase64, "base64") : null;
@@ -80,7 +85,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
           ? (body.photoMimeType_2?.trim() || body.photoMimeType2?.trim() || "image/jpeg")
           : null;
         const photoMimeType = photoBuffer ? (body.photoMimeType?.trim() || "image/jpeg") : null;
-        const videoMimeType = videoBuffer ? (body.videoMimeType?.trim() || "video/mp4") : null;
+        const videoMimeType = (videoBuffer || videoUrl) ? (body.videoMimeType?.trim() || "video/mp4") : null;
 
         if (!Number.isSafeInteger(messageId) || messageId <= 0) {
           return json({ ok: false, error: "messageId must be a positive integer", version: INGEST_VERSION }, 400);
@@ -97,6 +102,9 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
         if (videoBase64 && videoBase64.length > MAX_VIDEO_BASE64) {
           return json({ ok: false, error: "Video is too large for direct website ingestion", version: INGEST_VERSION }, 413);
         }
+        if (!videoUrl && !videoBuffer) {
+          // Keep video fields empty when no video was supplied.
+        }
 
         try {
           const sql = await getSql();
@@ -105,8 +113,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
             `insert into telegram_posts
                (chat_id, message_id, chat_username, chat_title, text, published_at,
                 photo_data, photo_mime_type, photo_data_2, photo_mime_type_2,
-                video_data, video_mime_type, message_url, updated_at)
-             values ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+                video_data, video_mime_type, video_url, message_url, updated_at)
+             values ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
              on conflict (chat_id, message_id) do update set
                text = excluded.text,
                published_at = excluded.published_at,
@@ -116,6 +124,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
                photo_mime_type_2 = coalesce(excluded.photo_mime_type_2, telegram_posts.photo_mime_type_2),
                video_data = coalesce(excluded.video_data, telegram_posts.video_data),
                video_mime_type = coalesce(excluded.video_mime_type, telegram_posts.video_mime_type),
+               video_url = coalesce(excluded.video_url, telegram_posts.video_url),
                message_url = excluded.message_url,
                updated_at = CURRENT_TIMESTAMP`,
             [
@@ -130,6 +139,7 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
               storedPhotoMimeType2,
               videoBuffer,
               videoMimeType,
+              videoUrl,
               body.messageUrl || `https://t.me/${CANONICAL_CHANNEL}/${messageId}`,
             ],
           );
@@ -141,7 +151,8 @@ export const Route = createFileRoute("/api/news-ingest-v2")({
             channel: CANONICAL_CHANNEL,
             receivedChannel,
             photoCount: Number(Boolean(photoBuffer)) + Number(Boolean(storedPhotoBuffer2)),
-            video: Boolean(videoBuffer),
+            video: Boolean(videoBuffer || videoUrl),
+            videoStorage: videoUrl ? "vercel-blob" : videoBuffer ? "turso-legacy" : "none",
             duplicateSecondPhotoIgnored: duplicateSecondPhoto,
           });
         } catch (error) {

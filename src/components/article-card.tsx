@@ -1,8 +1,9 @@
-import { Link } from "@tanstack/react-router";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
+import { ShareBar } from "@/components/share-bar";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime, type Article } from "@/lib/news";
+import { storyPath } from "@/lib/story-url";
 
 type ArticleWithTelegram = Article & {
   _telegramId?: number;
@@ -10,6 +11,7 @@ type ArticleWithTelegram = Article & {
   _hasPhoto2?: boolean;
   _hasVideo?: boolean;
   _videoMimeType?: string | null;
+  _videoUrl?: string | null;
   _messageUrl?: string | null;
 };
 
@@ -23,34 +25,21 @@ export function ArticleCard({
   from?: string;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
+  const path = storyPath(article._telegramId ?? slug);
+  const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
   const hasVideo = Boolean(article._telegramId && article._hasVideo);
   const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
 
   return (
-    <Link
-      to="/n/$slug"
-      params={{ slug }}
-      search={{ from }}
-      className="group block rounded-lg border border-border bg-surface p-5 transition-[border-color,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:border-ring/40 hover:shadow-lg"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <TagBadge tag={article.tag} />
-        <time className="font-mono text-[11px] tabular-nums text-subtle">
-          {formatTime(article.publishedAt)}
-        </time>
-      </div>
-
+    <article className="overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-border)] transition-[box-shadow,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:-translate-y-px hover:shadow-[var(--shadow-border-hover)]">
       {hasMedia && article._telegramId ? (
-        <div
-          className="mt-4"
-          onClick={article._hasVideo ? (event) => event.preventDefault() : undefined}
-          onPointerDown={article._hasVideo ? (event) => event.stopPropagation() : undefined}
-        >
-          {hasVideo && article._telegramId ? (
+        <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+          {hasVideo ? (
             <StoryVideo
               id={article._telegramId}
               mimeType={article._videoMimeType}
+              videoUrl={article._videoUrl}
               size={featured ? "article" : "card"}
             />
           ) : (
@@ -64,33 +53,45 @@ export function ArticleCard({
         </div>
       ) : null}
 
-      <h2
-        className={
-          featured
-            ? "mt-4 font-display text-xl font-medium leading-snug text-foreground sm:text-2xl group-hover:text-azure transition-colors"
-            : "mt-3 font-display text-lg font-medium leading-snug text-foreground group-hover:text-azure transition-colors"
-        }
-      >
-        {article.headline}
-      </h2>
+      <a href={storyHref} className="group block p-5 pb-3 sm:p-6 sm:pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <TagBadge tag={article.tag} />
+          <time className="text-[11px] font-medium tabular-nums text-subtle">
+            {formatTime(article.publishedAt)}
+          </time>
+        </div>
 
-      <p className="mt-2 font-news text-[15px] leading-[1.6] text-muted line-clamp-3">
-        {article.dek}
-      </p>
+        <h2
+          className={
+            featured
+              ? "mt-4 text-xl font-semibold leading-tight tracking-[-0.02em] text-foreground transition-colors duration-[var(--motion-quick)] group-hover:text-azure sm:text-2xl"
+              : "mt-3 text-lg font-semibold leading-tight tracking-[-0.015em] text-foreground transition-colors duration-[var(--motion-quick)] group-hover:text-azure"
+          }
+        >
+          {article.headline}
+        </h2>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
-          {article.category}
-        </span>
-        {article.tickers.slice(0, 4).map((t) => (
-          <span
-            key={t}
-            className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted"
-          >
-            {t}
+        <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted line-clamp-3">
+          {article.dek}
+        </p>
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle">
+            {article.category}
           </span>
-        ))}
+          {article.tickers.slice(0, 4).map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-border/80 px-2 py-0.5 text-[10px] font-medium text-muted"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      </a>
+      <div className="px-5 pb-4 sm:px-6">
+        <ShareBar title={article.headline} path={path} />
       </div>
-    </Link>
+    </article>
   );
 }
