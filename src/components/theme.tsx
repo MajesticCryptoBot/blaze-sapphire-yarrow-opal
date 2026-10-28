@@ -42,11 +42,12 @@ function applyTheme(theme: ThemeName) {
 
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
-  // Explicit solid colors so Safari 26 Liquid Glass samples the correct tint
-  // (theme-color meta is ignored on iOS 26; body / sticky bg are used instead).
-  root.style.backgroundColor = color;
+
+  // Keep html/body transparent so the fixed SiteBackground layers remain visible.
+  // Only theme-color meta needs the solid color (browser chrome / Safari status bar).
+  root.style.backgroundColor = "transparent";
   if (document.body) {
-    document.body.style.backgroundColor = color;
+    document.body.style.backgroundColor = "transparent";
   }
 
   setMeta("theme-color", color);
