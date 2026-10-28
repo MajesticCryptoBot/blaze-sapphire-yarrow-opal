@@ -1,15 +1,21 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  CalendarDays,
+  Bitcoin,
+  Building2,
+  Castle,
+  Clapperboard,
   Coins,
-  Cpu,
+  Globe,
+  Hexagon,
   Home,
+  Landmark,
   Lightbulb,
   Menu,
-  Rocket,
+  Newspaper,
+  Scale,
   Sparkles,
-  Trophy,
   TrendingUp,
+  Waves,
   X,
 } from "lucide-react";
 import {
@@ -26,14 +32,20 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   { label: "Home", to: "/" as const, icon: Home },
-  { label: "Crypto", to: "/$slug" as const, params: { slug: "crypto" }, icon: Coins },
-  { label: "Tech", to: "/$slug" as const, params: { slug: "tech" }, icon: Cpu },
-  { label: "AI", to: "/$slug" as const, params: { slug: "ai" }, icon: Sparkles },
-  { label: "Stocks", to: "/$slug" as const, params: { slug: "stocks" }, icon: TrendingUp },
-  { label: "Innovation", to: "/$slug" as const, params: { slug: "innovation" }, icon: Rocket },
-  { label: "The Calendar", to: "/calendar" as const, icon: CalendarDays },
+  { label: "News", to: "/$slug" as const, params: { slug: "news" }, icon: Newspaper },
+  { label: "Market", to: "/markets" as const, icon: TrendingUp },
+  { label: "Bitcoin", to: "/$slug" as const, params: { slug: "bitcoin" }, icon: Bitcoin },
+  { label: "Ethereum", to: "/$slug" as const, params: { slug: "ethereum" }, icon: Hexagon },
+  { label: "Solana", to: "/$slug" as const, params: { slug: "solana" }, icon: Sparkles },
+  { label: "XRP", to: "/$slug" as const, params: { slug: "xrp" }, icon: Waves },
+  { label: "Altcoins", to: "/$slug" as const, params: { slug: "altcoins" }, icon: Coins },
+  { label: "Regulation", to: "/$slug" as const, params: { slug: "regulation" }, icon: Scale },
+  { label: "US", to: "/$slug" as const, params: { slug: "us" }, icon: Landmark },
+  { label: "International", to: "/$slug" as const, params: { slug: "international" }, icon: Globe },
+  { label: "China", to: "/$slug" as const, params: { slug: "china" }, icon: Building2 },
+  { label: "Russia", to: "/$slug" as const, params: { slug: "russia" }, icon: Castle },
   { label: "Fun Facts", to: "/$slug" as const, params: { slug: "fun-facts" }, icon: Lightbulb },
-  { label: "Top Movers", to: "/$slug" as const, params: { slug: "top-movers" }, icon: Trophy },
+  { label: "Videos", to: "/$slug" as const, params: { slug: "videos" }, icon: Clapperboard },
 ];
 
 type NavContextValue = {
@@ -65,7 +77,7 @@ export function HeaderMenuButton() {
       onClick={toggle}
       aria-label={open ? "Close desk navigation" : "Open desk navigation"}
       aria-expanded={open}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure md:hidden"
+      className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
     >
       {open ? <X className="size-5" /> : <Menu className="size-5" />}
     </button>
@@ -82,25 +94,25 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         const href = "params" in item && item.params ? `/${item.params.slug}` : item.to;
         const active = pathname === href;
         const className = cn(
-          "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-[background-color,color] duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
+          "flex h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors duration-[var(--motion-quick)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure",
           active
-            ? "bg-azure/15 text-azure"
+            ? "bg-azure/10 text-azure"
             : "text-muted hover:bg-azure/10 hover:text-azure",
         );
 
         if (item.to === "/") {
           return (
             <Link key={item.label} to="/" search={{ q: "" }} onClick={onNavigate} className={className}>
-              <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
+              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
               <span>{item.label}</span>
             </Link>
           );
         }
 
-        if (item.to === "/markets" || item.to === "/calendar") {
+        if (item.to === "/markets") {
           return (
-            <Link key={item.label} to={item.to} onClick={onNavigate} className={className}>
-              <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
+            <Link key={item.label} to="/markets" onClick={onNavigate} className={className}>
+              <Icon className="size-4 shrink-0" strokeWidth={1.7} />
               <span>{item.label}</span>
             </Link>
           );
@@ -114,7 +126,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={className}
           >
-            <Icon className="size-[18px] shrink-0" strokeWidth={1.8} />
+            <Icon className="size-4 shrink-0" strokeWidth={1.7} />
             <span>{item.label}</span>
           </Link>
         );
@@ -143,13 +155,13 @@ export function SideBar() {
   return (
     <>
       <div className="hidden w-12 shrink-0 md:block" aria-hidden="true" />
-      <aside className="glass-rail glass-border fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r md:block">
+      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-12 border-r border-border bg-bg md:block">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open desk navigation"
           aria-expanded={open}
-          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure"
+          className="mt-3 ml-0.5 flex size-11 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="size-5" />
         </button>
@@ -166,7 +178,7 @@ export function SideBar() {
           aria-label="Close desk navigation"
           onClick={() => setOpen(false)}
           className={cn(
-            "absolute inset-0 bg-black/35 transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "absolute inset-0 bg-bg/70 transition-opacity duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "opacity-100" : "opacity-0",
           )}
         />
@@ -175,14 +187,14 @@ export function SideBar() {
           aria-label="Desk navigation"
           aria-hidden={!open}
           className={cn(
-            "glass-drawer glass-border absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-1rem))] flex-col border-r shadow-[var(--shadow-elevated)] transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+            "absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-border bg-surface shadow-2xl transition-transform duration-[var(--motion-fast)] ease-[var(--ease-out)]",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div className="flex h-16 items-center justify-between border-b border-border px-4">
+          <div className="flex h-14 items-center justify-between border-b border-border px-4">
             <div>
-              <p className="text-lg font-semibold leading-none tracking-tight">ASP</p>
-              <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-subtle">
+              <p className="font-display text-lg leading-none">ASP</p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
                 Desk
               </p>
             </div>
@@ -190,7 +202,7 @@ export function SideBar() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close desk navigation"
-              className="flex size-11 items-center justify-center rounded-full text-muted transition-[background-color,color] duration-[var(--motion-quick)] hover:bg-azure/10 hover:text-azure focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure"
+              className="flex size-11 items-center justify-center rounded-md text-muted transition-colors duration-[var(--motion-quick)] hover:bg-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="size-4" />
             </button>

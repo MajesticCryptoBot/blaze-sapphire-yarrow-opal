@@ -1,9 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "@/lib/auth/provider";
-import { AmbientBackground } from "@/components/ambient-background";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
-import { SideRails } from "@/components/side-rails";
 import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -18,21 +15,15 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1, viewport-fit=cover",
-      },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
       {
         name: "description",
         content:
           "ASP News — live market intelligence for crypto, macro, and AI.",
       },
-      // Default dark; JS below and ThemeProvider keep this in sync with light mode
-      { name: "theme-color", content: "#0b0b0d" },
+      { name: "theme-color", content: "#09090b" },
       { name: "color-scheme", content: "dark light" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -53,17 +44,16 @@ export const Route = createRootRoute({
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t!=="light"&&t!=="dark")t="dark";var c=t==="light"?"#f5f5f7":"#0b0b0d";var r=document.documentElement;r.setAttribute("data-theme",t);r.style.colorScheme=t;r.style.backgroundColor=c;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c);else{m=document.createElement("meta");m.name="theme-color";m.content=c;document.head.appendChild(m);}var s=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');if(s)s.setAttribute("content",t==="light"?"default":"black-translucent");}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("asp-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
           }}
         />
       </head>
       <body className="bg-bg text-foreground">
-        <AmbientBackground />
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
             <SiteNavProvider>
-              <div className="relative z-10 flex min-h-dvh flex-col">
+              <div className="flex min-h-dvh flex-col">
                 <SiteHeader />
                 <TickerBar />
                 <div className="flex min-h-0 flex-1">
@@ -75,12 +65,10 @@ export const Route = createRootRoute({
                   </div>
                 </div>
               </div>
-              <SideRails />
             </SiteNavProvider>
           </ThemeProvider>
         </AuthProvider>
         <Scripts />
-        <Analytics />
       </body>
     </html>
   ),

@@ -65,11 +65,11 @@ async function createTursoSql(): Promise<Sql> {
     globalRef.__tursoClient__ = client;
 
     // SQLite schema used by the production Turso database. This is intentionally
-    // idempotent so an existing database is left untouched except for additive
-    // media metadata columns required by the Telegram publishing features.
+    // idempotent so an existing database is left untouched except for the
+    // additive second-photo columns required by the Telegram album feature.
     globalRef.__tursoSchemaPromise__ ??= (async () => {
       await client.batch([
-        { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, photo_w INTEGER, photo_h INTEGER, photo_data_2 BLOB, photo_mime_type_2 TEXT, photo2_w INTEGER, photo2_h INTEGER, video_data BLOB, video_mime_type TEXT, video_url TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
+        { sql: "CREATE TABLE IF NOT EXISTS telegram_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, message_id INTEGER NOT NULL, chat_username TEXT, chat_title TEXT, text TEXT NOT NULL DEFAULT '', published_at TEXT NOT NULL, photo_file_id TEXT, photo_data BLOB, photo_mime_type TEXT, photo_data_2 BLOB, photo_mime_type_2 TEXT, message_url TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(chat_id, message_id))" },
         { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_published_at_idx ON telegram_posts (published_at DESC)" },
         { sql: "CREATE INDEX IF NOT EXISTS telegram_posts_chat_id_idx ON telegram_posts (chat_id)" },
       ], "write");
@@ -81,11 +81,6 @@ async function createTursoSql(): Promise<Sql> {
       if (!names.has("photo_mime_type_2")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_mime_type_2 TEXT" });
       if (!names.has("video_data")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_data BLOB" });
       if (!names.has("video_mime_type")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_mime_type TEXT" });
-      if (!names.has("video_url")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN video_url TEXT" });
-      if (!names.has("photo_w")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_w INTEGER" });
-      if (!names.has("photo_h")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo_h INTEGER" });
-      if (!names.has("photo2_w")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo2_w INTEGER" });
-      if (!names.has("photo2_h")) additions.push({ sql: "ALTER TABLE telegram_posts ADD COLUMN photo2_h INTEGER" });
       if (additions.length) await client.batch(additions, "write");
     })();
     await globalRef.__tursoSchemaPromise__;

@@ -1,5 +1,4 @@
 import { getSql } from "@/lib/db";
-import { getImageDims } from "@/lib/image-dims";
 import type { NewsTag } from "@/lib/news";
 
 export const TELEGRAM_CHANNEL = "AlphaSignalsPro";
@@ -14,13 +13,7 @@ export type TelegramPost = {
   hasPhoto2: boolean;
   hasVideo: boolean;
   videoMimeType: string | null;
-  videoUrl: string | null;
   messageUrl: string | null;
-  /** Intrinsic pixel dimensions of photo 1 — feeds the homepage fit gate. */
-  photoW: number | null;
-  photoH: number | null;
-  photo2W: number | null;
-  photo2H: number | null;
 };
 
 type PostRow = {
@@ -32,18 +25,7 @@ type PostRow = {
   has_photo_2: number | boolean;
   has_video?: number | boolean;
   video_mime_type?: string | null;
-  video_url?: string | null;
-  photo_w?: number | null;
-  photo_h?: number | null;
-  photo2_w?: number | null;
-  photo2_h?: number | null;
 };
-
-function numOrNull(value: number | string | null | undefined): number | null {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
 
 function mapRow(row: PostRow): TelegramPost {
   return {
@@ -54,12 +36,7 @@ function mapRow(row: PostRow): TelegramPost {
     hasPhoto2: Boolean(row.has_photo_2),
     hasVideo: Boolean(row.has_video),
     videoMimeType: row.video_mime_type ?? null,
-    videoUrl: row.video_url ?? null,
     messageUrl: row.message_url,
-    photoW: numOrNull(row.photo_w),
-    photoH: numOrNull(row.photo_h),
-    photo2W: numOrNull(row.photo2_w),
-    photo2H: numOrNull(row.photo2_h),
   };
 }
 
@@ -80,44 +57,38 @@ export function tagFromText(text: string): NewsTag {
 
 export function categoryFromText(text: string): string {
   const lower = text.toLowerCase();
-  const head = (text.split("\n").map((l) => l.trim()).find(Boolean) ?? text).toLowerCase();
 
-  const has = (pattern: RegExp, source = lower) => {
-    pattern.lastIndex = 0;
-    return pattern.test(source);
-  };
-  const inHeadline = (pattern: RegExp) => has(pattern, head);
+  const has = (pattern: RegExp) => pattern.test(lower);
 
-  // Geopolitics first when the headline is clearly conflict / nation-state
   if (
-    inHeadline(
-      /\b(war|warfare|invasion|ceasefire|airstrike|missile|troops?|nato|sanctions?|geopolitics|geopolitical)\b/,
+    has(
+      /\b(war|warfare|invasion|ceasefire|airstrike|air strike|missile|drone strike|troops?|military|army|navy|pentagon|nato|sanctions?|hostilities|geopolitics|geopolitical|conflict)\b/,
     ) ||
     has(
-      /\b(iran|iranian|tehran|israel|israeli|gaza|hamas|hezbollah|lebanon|houthis?|yemen|syria|ukraine|ukrainian|kyiv|zelensky|putin|kremlin|moscow|taiwan|strait|north korea|pyongyang)\b/,
-    )
+      /\b(iran|iranian|tehran|israel|israeli|gaza|hamas|hezbollah|lebanon|houthis?|yemen|syria|ukraine|ukrainian|kyiv|kiev|zelensky)\b/,
+    ) ||
+    has(/\b(putin|kremlin|moscow|russian army|taiwan|taipei|strait|north korea|pyongyang|kim jong)\b/)
   ) {
     return "Geopolitics";
   }
 
   if (
-    has(/\b(data[- ]cent(?:er|re)s?|hyperscale|gigawatt|\bgw\b|power grid|interconnect(?:ion)?)\b/) ||
+    has(/\b(data[- ]cent(?:er|re)s?|hyperscale|gigawatt|\bgw\b|10\s*gw|power grid|interconnect(?:ion)?)\b/) ||
     has(/\b(tsmc|asml|foundry|hbm|nvlink|supercluster|ai campus|ai factory)\b/)
   ) {
     return "AI Infrastructure";
   }
 
-  // Prefer explicit AI labs / models over bare "ai" buried in body
   if (
     has(/\b(openai|anthropic|chatgpt|claude|gemini|grok|xai|deepseek|llm|superintelligence)\b/) ||
-    has(/\b(nvidia|gpu|gpus|semiconductor|ai model|language model|generative ai)\b/) ||
-    inHeadline(/\bai\b/)
+    has(/\b(nvidia|gpu|gpus|semiconductor|ai model|language model)\b/) ||
+    has(/\bai\b/)
   ) {
     return "AI";
   }
 
   if (
-    has(/\b(federal reserve|the fed|fomc|powell|warsh|jackson hole)\b/) ||
+    has(/\b(federal reserve|the fed|fed|fomc|powell|warsh|jackson hole)\b/) ||
     has(/\b(cpi|pce|nfp|nonfarm|inflation|rate[- ]hike|rate[- ]cut|basis points?|bps)\b/) ||
     has(/\b(ecb|boj|gdp|unemployment|jobs report|treasury yield|dxy|dollar index)\b/)
   ) {
@@ -126,14 +97,14 @@ export function categoryFromText(text: string): string {
 
   if (
     has(/\b(earnings|ipo|share price|stock price|equit(?:y|ies)|listed shares)\b/) ||
-    has(/\b(tesla|apple|microsoft|amazon|alphabet|google|meta platforms|microstrategy)\b/) ||
-    has(/\b(tslab|aaplb|mstrb|nvdab|spcxb)\b/)
+    has(/\b(tesla|apple|microsoft|amazon|alphabet|google|meta|microstrategy|strategy)\b/) ||
+    has(/\b(tslab|aaplb|mstrb|nvdab|spcxb|bstocks?)\b/)
   ) {
     return "Equities";
   }
 
   if (
-    has(/\b(s&p|nasdaq|dow jones|kospi|hang seng|nikkei|stoxx)\b/) ||
+    has(/\b(s&p|s & p|nasdaq|dow jones|kospi|hang seng|nikkei|stoxx)\b/) ||
     has(/\b(crude|brent|wti|oil price|gold|silver|copper|commodit(?:y|ies)|yield curve)\b/) ||
     has(/\b(risk[- ]on|risk[- ]off|selloff|sell-off|rally)\b/)
   ) {
@@ -141,9 +112,7 @@ export function categoryFromText(text: string): string {
   }
 
   if (
-    has(
-      /\b(bitcoin|btc|ethereum|ether|\beth\b|solana|\bsol\b|xrp|ripple|crypto|defi|stablecoin|altcoin)\b/,
-    )
+    has(/\b(bitcoin|btc|ethereum|ether|\beth\b|solana|\bsol\b|xrp|ripple|crypto|defi|stablecoin|altcoin)\b/)
   ) {
     return "Crypto";
   }
@@ -158,33 +127,31 @@ export function splitHeadline(text: string) {
   return { headline, dek, body: lines.slice(1) };
 }
 
-const POST_COLUMNS = `message_id, text, published_at, message_url,
-        case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
-        case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
-        case when video_data is not null or video_url is not null then 1 else 0 end as has_video,
-        video_mime_type,
-        video_url,
-        photo_w, photo_h, photo2_w, photo2_h`;
-
 export async function listTelegramPosts(limit = 10): Promise<TelegramPost[]> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select ${POST_COLUMNS}
+    `select message_id, text, published_at, message_url,
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
+            case when video_data is not null then 1 else 0 end as has_video,
+            video_mime_type
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
       order by published_at desc
       limit $2`,
     [CHANNEL_KEY, Math.min(Math.max(limit, 1), 80)],
   );
-  const posts = rows.map(mapRow);
-  await backfillPhotoDimsWithTimeout();
-  return posts;
+  return rows.map(mapRow);
 }
 
 export async function getTelegramPost(id: number): Promise<TelegramPost | null> {
   const sql = await getSql();
   const rows = await sql.query<PostRow>(
-    `select ${POST_COLUMNS}
+    `select message_id, text, published_at, message_url,
+            case when photo_file_id is not null or photo_data is not null then 1 else 0 end as has_photo,
+            case when photo_data_2 is not null then 1 else 0 end as has_photo_2,
+            case when video_data is not null then 1 else 0 end as has_video,
+            video_mime_type
        from telegram_posts
       where lower(replace(coalesce(chat_username, ''), '@', '')) = $1
         and (message_id = $2 or id = $2)
@@ -192,92 +159,7 @@ export async function getTelegramPost(id: number): Promise<TelegramPost | null> 
       limit 1`,
     [CHANNEL_KEY, id],
   );
-  const post = rows[0] ? mapRow(rows[0]) : null;
-  await backfillPhotoDimsWithTimeout();
-  return post;
-}
-
-/**
- * One-time (per server instance) backfill of photo dimensions for rows stored
- * before the fit gate shipped. Reads each still-unmeasured photo blob, parses
- * its intrinsic size and persists it. Budgeted to a bounded slice per pass so
- * the 30s homepage poll never does heavy work twice, and capped with a short
- * race timeout so a slow Turso round-trip can never delay a response.
- */
-const DIMS_BACKFILL_BATCH = 60;
-const DIMS_BACKFILL_TIMEOUT_MS = 4_000;
-const dimsState = globalThis as typeof globalThis & {
-  __aspDimsBackfillDone__?: boolean;
-  __aspDimsBackfillRunning__?: Promise<void>;
-  __aspDimsFailedIds__?: Set<number>;
-};
-
-dimsState.__aspDimsFailedIds__ ??= new Set<number>();
-
-function backfillPhotoDims(): Promise<void> {
-  if (dimsState.__aspDimsBackfillDone__) return Promise.resolve();
-  dimsState.__aspDimsBackfillRunning__ ??= (async () => {
-    try {
-      const sql = await getSql();
-      const rows = await sql.query<{
-        id: number | string;
-        message_id: number | string;
-        photo_data: Uint8Array | ArrayBuffer | null;
-        photo_data_2: Uint8Array | ArrayBuffer | null;
-      }>(
-        `select id, message_id, photo_data, photo_data_2
-           from telegram_posts
-          where (photo_data is not null and photo_w is null)
-             or (photo_data_2 is not null and photo2_w is null)
-          order by published_at desc
-          limit $1`,
-        [DIMS_BACKFILL_BATCH],
-      );
-      if (rows.length === 0) {
-        dimsState.__aspDimsBackfillDone__ = true;
-        return;
-      }
-      const failed = dimsState.__aspDimsFailedIds__!;
-      for (const row of rows) {
-        const rowId = Number(row.id);
-        if (failed.has(rowId)) continue;
-        const assignments: string[] = [];
-        const params: unknown[] = [];
-        const d1 = getImageDims(row.photo_data);
-        if (d1) {
-          assignments.push(`photo_w = $${params.length + 1}`, `photo_h = $${params.length + 2}`);
-          params.push(d1.w, d1.h);
-        }
-        const d2 = getImageDims(row.photo_data_2);
-        if (d2) {
-          assignments.push(`photo2_w = $${params.length + 1}`, `photo2_h = $${params.length + 2}`);
-          params.push(d2.w, d2.h);
-        }
-        if (assignments.length === 0) {
-          failed.add(rowId); // unparsable blob — never re-parse it
-          continue;
-        }
-        params.push(rowId);
-        await sql.query(
-          `update telegram_posts set ${assignments.join(", ")} where id = $${params.length}`,
-          params,
-        );
-      }
-    } catch (error) {
-      console.error("[dims] backfill failed:", error instanceof Error ? error.message : error);
-    } finally {
-      dimsState.__aspDimsBackfillRunning__ = undefined;
-    }
-  })();
-  return dimsState.__aspDimsBackfillRunning__!;
-}
-
-/** Await the backfill, but never block a response for more than the timeout. */
-function backfillPhotoDimsWithTimeout(): Promise<void> {
-  return Promise.race([
-    backfillPhotoDims().catch(() => undefined),
-    new Promise<void>((resolve) => setTimeout(resolve, DIMS_BACKFILL_TIMEOUT_MS)),
-  ]);
+  return rows[0] ? mapRow(rows[0]) : null;
 }
 
 export async function getTelegramPhoto(id: number, photoNumber = 1) {
@@ -298,8 +180,8 @@ export async function getTelegramPhoto(id: number, photoNumber = 1) {
 
 export async function getTelegramVideo(id: number) {
   const sql = await getSql();
-  const rows = await sql.query<{ video_data: Uint8Array | ArrayBuffer | null; video_mime_type: string | null; video_url: string | null }>(
-    `select video_data, video_mime_type, video_url
+  const rows = await sql.query<{ video_data: Uint8Array | ArrayBuffer | null; video_mime_type: string | null }>(
+    `select video_data, video_mime_type
        from telegram_posts
       where (message_id = $1 or id = $1)
         and lower(replace(coalesce(chat_username, ''), '@', '')) = $2

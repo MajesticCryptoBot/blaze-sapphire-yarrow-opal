@@ -1,14 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { GlossaryText } from "@/components/glossary-text";
-import { RelatedDesks } from "@/components/related-desks";
-import { ShareBar } from "@/components/share-bar";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
+import { TagBadge } from "@/components/tag-badge";
 import { isDeskSlug } from "@/lib/desk-sections";
 import { formatTime } from "@/lib/news";
-import { parsePublicId, splitHeadline, getTelegramPost, type TelegramPost } from "@/lib/telegram-feed";
-import { storyPath } from "@/lib/story-url";
+import { parsePublicId, splitHeadline, tagFromText, type TelegramPost } from "@/lib/telegram-feed";
 
 export const Route = createFileRoute("/n/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -17,19 +14,13 @@ export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
     const id = parsePublicId(params.slug);
     if (id === null) return { post: null as TelegramPost | null };
-    try {
-      const post = await getTelegramPost(id);
-      return { post };
-    } catch (error) {
-      console.error("[story]", error instanceof Error ? error.message : error);
-      return { post: null as TelegramPost | null };
-    }
+
+    const response = await fetch(`/api/news/${id}`);
+    if (!response.ok) return { post: null as TelegramPost | null };
+    const payload = (await response.json()) as { post?: TelegramPost };
+    return { post: payload.post ?? null };
   },
-  head: ({ loaderData }) => {
-    const text = loaderData?.post?.text ?? "";
-    const headline = text ? splitHeadline(text).headline : "ASP News";
-    return { meta: [{ title: `${headline} — ASP News` }] };
-  },
+  head: () => ({ meta: [{ title: "ASP News" }] }),
   component: ArticlePage,
 });
 
@@ -68,7 +59,7 @@ function ArticlePage() {
 
   const { headline, dek } = splitHeadline(post.text);
   const body = dek ? [dek] : [headline];
-  const path = storyPath(post.id);
+  const tag = tagFromText(post.text);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -76,48 +67,31 @@ function ArticlePage() {
 
       <article className="mt-6 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
+          <TagBadge tag={tag} />
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">Telegram</span>
           <time className="font-mono text-[11px] tabular-nums text-subtle">{formatTime(post.publishedAt)} UTC</time>
         </div>
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
 
-        {/* Original story behaviour, restored: the photo IS the story's media.
-            A video player appears only when the story has no photo at all —
-            a video can never replace a photo or sit under it again. */}
-        {post.hasPhoto ? (
+        {post.hasVideo ? (
+          <div className="mt-6">
+            <StoryVideo id={post.id} mimeType={post.videoMimeType} size="article" />
+          </div>
+        ) : post.hasPhoto ? (
           <div className="mt-6">
             <StoryPhotos
               id={post.id}
               hasPhoto={post.hasPhoto}
               hasPhoto2={post.hasPhoto2}
-              variant="article"
-              eager
-              photoW={post.photoW}
-              photoH={post.photoH}
-              photo2W={post.photo2W}
-              photo2H={post.photo2H}
+              size="article"
             />
-          </div>
-        ) : post.hasVideo ? (
-          <div className="mt-6">
-            <StoryVideo id={post.id} mimeType={post.videoMimeType} videoUrl={post.videoUrl} size="article" />
           </div>
         ) : null}
 
         <div className="mt-8 space-y-5 font-news text-[18px] leading-[1.6] text-foreground">
-          {body.map((paragraph, index) => (
-            <p key={index}>
-              <GlossaryText text={paragraph} />
-            </p>
-          ))}
+          {body.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
-
-        <div className="mt-6 border-t border-border pt-2">
-          <ShareBar title={headline} path={path} />
-        </div>
-
-        <RelatedDesks text={post.text} />
 
         {post.messageUrl ? (
           <div className="mt-8 rounded-md border border-border bg-surface p-4">

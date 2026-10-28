@@ -1,14 +1,11 @@
 import { ExternalLink, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ShareBar } from "@/components/share-bar";
 import { Sparkline } from "@/components/sparkline";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
 import { useMarketCharts } from "@/components/use-market-charts";
 import { PRICE_REFRESH_MS, fetchBinanceMarkets, type MarketQuote } from "@/lib/binance-markets";
 import { formatTime } from "@/lib/news";
-import { fitCardPhotos } from "@/lib/photo-fit";
-import { storyPath } from "@/lib/story-url";
 import { TELEGRAM_CHANNEL, TELEGRAM_URL, splitHeadline, type TelegramPost } from "@/lib/telegram-feed";
 import { cn } from "@/lib/utils";
 
@@ -64,21 +61,6 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
 
   const headline = latest ? splitHeadline(latest.text).headline : null;
   const dek = latest ? splitHeadline(latest.text).dek : null;
-  // Same "check size, fit, or drop" gate as the deck: the featured wire slot
-  // only shows the photo when it fits the uniform 16:9 frame; otherwise the
-  // photo lives in the full story view. A fitting photo always renders before
-  // any video — a video attachment can never replace a good photo on the wire.
-  // Videos show here only for stories that have no card-worthy photo.
-  const fit = latest
-    ? fitCardPhotos({
-        hasPhoto: latest.hasPhoto,
-        hasPhoto2: latest.hasPhoto2,
-        photoW: latest.photoW,
-        photoH: latest.photoH,
-        photo2W: latest.photo2W,
-        photo2H: latest.photo2H,
-      })
-    : { mode: "none" as const, solo: 1 as const };
 
   return (
     <section className="mt-10 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -98,25 +80,18 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <p className="py-6 text-sm text-muted">Waiting for the next headline.</p>
         ) : (
           <article className="py-5">
-            {latest.hasPhoto && fit.mode !== "none" ? (
+            {latest.hasVideo ? (
+              <div className="mb-4">
+                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} size="wire" />
+              </div>
+            ) : latest.hasPhoto ? (
               <div className="mb-4">
                 <StoryPhotos
                   id={latest.id}
                   hasPhoto={latest.hasPhoto}
                   hasPhoto2={latest.hasPhoto2}
-                  variant="deck"
-                  eager
-                  photoW={latest.photoW}
-                  photoH={latest.photoH}
-                  photo2W={latest.photo2W}
-                  photo2H={latest.photo2H}
-                  mode={fit.mode === "pair" ? "pair" : "single"}
-                  solo={fit.solo}
+                  size="wire"
                 />
-              </div>
-            ) : latest.hasVideo ? (
-              <div className="mb-4">
-                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} videoUrl={latest.videoUrl} size="wire" />
               </div>
             ) : null}
 
@@ -138,9 +113,6 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
               >
                 Telegram <ExternalLink className="size-3" />
               </a>
-            </div>
-            <div className="mt-2">
-              <ShareBar title={headline ?? "ASP News"} path={storyPath(latest.id)} />
             </div>
           </article>
         )}

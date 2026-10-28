@@ -1,9 +1,8 @@
+import { Link } from "@tanstack/react-router";
 import { StoryPhotos } from "@/components/story-photos";
 import { StoryVideo } from "@/components/story-video";
-import { ShareBar } from "@/components/share-bar";
+import { TagBadge } from "@/components/tag-badge";
 import { formatTime, type Article } from "@/lib/news";
-import { fitCardPhotos } from "@/lib/photo-fit";
-import { storyPath } from "@/lib/story-url";
 
 type ArticleWithTelegram = Article & {
   _telegramId?: number;
@@ -11,75 +10,47 @@ type ArticleWithTelegram = Article & {
   _hasPhoto2?: boolean;
   _hasVideo?: boolean;
   _videoMimeType?: string | null;
-  _videoUrl?: string | null;
   _messageUrl?: string | null;
-  _photoW?: number | null;
-  _photoH?: number | null;
-  _photo2W?: number | null;
-  _photo2H?: number | null;
 };
 
 export function ArticleCard({
   article,
   featured = false,
   from = "",
-  withPhoto = false,
-  withVideo = false,
-  videoFallback = false,
 }: {
   article: ArticleWithTelegram;
   featured?: boolean;
   from?: string;
-  /** Photos are a main-deck treatment: the homepage featured slot and every
-   *  desk's lead story show their photo (fit-gated). All other cards stay
-   *  text-first — the original behaviour. */
-  withPhoto?: boolean;
-  /** The dedicated Videos desk keeps video players on its cards. */
-  withVideo?: boolean;
-  /** Homepage featured slot only: when a story has no card-worthy photo, its
-   *  video may play there (approved homepage behaviour). Desk cards never
-   *  fall back to video — a video can never replace a photo on a desk. */
-  videoFallback?: boolean;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
-  const path = storyPath(article._telegramId ?? slug);
-  const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
-  // "Check size, fit, or drop": the photo is measured against the uniform
-  // 16:9 deck frame and only earns a card slot when at least 80% of it stays
-  // visible. Photos that fail keep the card text-first; their photo lives in
-  // the full story view.
-  const fit = fitCardPhotos({
-    hasPhoto: Boolean(article._hasPhoto),
-    hasPhoto2: Boolean(article._hasPhoto2),
-    photoW: article._photoW,
-    photoH: article._photoH,
-    photo2W: article._photo2W,
-    photo2H: article._photo2H,
-  });
-  // Original behaviour, restored across the site:
-  //  - Photos show on the main decks only: the homepage featured slot and
-  //    each desk's lead story (`withPhoto`), fit-gated as approved. Every
-  //    other card is text-first, exactly like the original repo.
-  //  - Video players on cards exist ONLY on the dedicated Videos desk
-  //    (`withVideo`), plus the homepage featured slot's approved fallback
-  //    (`videoFallback`) when a story has no card-worthy photo. A video
-  //    attachment can therefore never replace or sit under a photo on any
-  //    desk card again.
-  const hasPhotos = withPhoto && fit.mode !== "none";
-  const hasVideo =
-    Boolean(article._telegramId && article._hasVideo) &&
-    (withVideo || (withPhoto && videoFallback && !hasPhotos));
+  const hasVideo = Boolean(article._telegramId && article._hasVideo);
+  const hasPhotos = Boolean(featured && article._telegramId && article._hasPhoto);
   const hasMedia = hasVideo || hasPhotos;
 
   return (
-    <article className="overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-border)] transition-[box-shadow,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:-translate-y-px hover:shadow-[var(--shadow-border-hover)]">
+    <Link
+      to="/n/$slug"
+      params={{ slug }}
+      search={{ from }}
+      className="group block rounded-lg border border-border bg-surface p-5 transition-[border-color,transform] duration-[var(--motion-fast)] ease-[var(--ease-out)] hover:border-ring/40 hover:shadow-lg"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <TagBadge tag={article.tag} />
+        <time className="font-mono text-[11px] tabular-nums text-subtle">
+          {formatTime(article.publishedAt)}
+        </time>
+      </div>
+
       {hasMedia && article._telegramId ? (
-        <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-          {hasVideo ? (
+        <div
+          className="mt-4"
+          onClick={article._hasVideo ? (event) => event.preventDefault() : undefined}
+          onPointerDown={article._hasVideo ? (event) => event.stopPropagation() : undefined}
+        >
+          {hasVideo && article._telegramId ? (
             <StoryVideo
               id={article._telegramId}
               mimeType={article._videoMimeType}
-              videoUrl={article._videoUrl}
               size={featured ? "article" : "card"}
             />
           ) : (
@@ -87,57 +58,39 @@ export function ArticleCard({
               id={article._telegramId}
               hasPhoto={Boolean(article._hasPhoto)}
               hasPhoto2={Boolean(article._hasPhoto2)}
-              variant="deck"
-              eager={featured}
-              photoW={article._photoW}
-              photoH={article._photoH}
-              photo2W={article._photo2W}
-              photo2H={article._photo2H}
-              mode={fit.mode === "pair" ? "pair" : "single"}
-              solo={fit.solo}
+              size={featured ? "article" : "wire"}
             />
           )}
         </div>
       ) : null}
 
-      <a href={storyHref} className="group block p-5 pb-3 sm:p-6 sm:pb-3">
-        <div className="flex items-center justify-end gap-3">
-          <time className="text-[11px] font-medium tabular-nums text-subtle">
-            {formatTime(article.publishedAt)}
-          </time>
-        </div>
+      <h2
+        className={
+          featured
+            ? "mt-4 font-display text-xl font-medium leading-snug text-foreground sm:text-2xl group-hover:text-azure transition-colors"
+            : "mt-3 font-display text-lg font-medium leading-snug text-foreground group-hover:text-azure transition-colors"
+        }
+      >
+        {article.headline}
+      </h2>
 
-        <h2
-          className={
-            featured
-              ? "mt-4 text-xl font-semibold leading-tight tracking-[-0.02em] text-foreground transition-colors duration-[var(--motion-quick)] group-hover:text-azure sm:text-2xl"
-              : "mt-3 text-lg font-semibold leading-tight tracking-[-0.015em] text-foreground transition-colors duration-[var(--motion-quick)] group-hover:text-azure"
-          }
-        >
-          {article.headline}
-        </h2>
+      <p className="mt-2 font-news text-[15px] leading-[1.6] text-muted line-clamp-3">
+        {article.dek}
+      </p>
 
-        <p className="mt-3 font-news text-[15px] leading-[1.6] text-muted line-clamp-3">
-          {article.dek}
-        </p>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle">
-            {article.category}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+          {article.category}
+        </span>
+        {article.tickers.slice(0, 4).map((t) => (
+          <span
+            key={t}
+            className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted"
+          >
+            {t}
           </span>
-          {article.tickers.slice(0, 4).map((t) => (
-            <span
-              key={t}
-              className="rounded-full border border-border/80 px-2 py-0.5 text-[10px] font-medium text-muted"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      </a>
-      <div className="px-5 pb-4 sm:px-6">
-        <ShareBar title={article.headline} path={path} />
+        ))}
       </div>
-    </article>
+    </Link>
   );
 }

@@ -14,13 +14,11 @@ const ITEMS = [
   { label: "China", to: "/$slug" as const, params: { slug: "china" } },
   { label: "Russia", to: "/$slug" as const, params: { slug: "russia" } },
   { label: "Videos", to: "/$slug" as const, params: { slug: "videos" } },
-  { label: "A–Z Glossary", to: "/glossary" as const },
 ] as const;
 
 function itemHref(item: (typeof ITEMS)[number]) {
   if (item.to === "/") return "/";
   if (item.to === "/markets") return "/markets";
-  if (item.to === "/glossary") return "/glossary";
   return `/${item.params.slug}`;
 }
 
@@ -54,14 +52,6 @@ export function DeskStrip() {
           if (item.to === "/markets") {
             return (
               <Link key={item.label} to="/markets" className={className}>
-                {item.label}
-              </Link>
-            );
-          }
-
-          if (item.to === "/glossary") {
-            return (
-              <Link key={item.label} to="/glossary" className={className}>
                 {item.label}
               </Link>
             );
