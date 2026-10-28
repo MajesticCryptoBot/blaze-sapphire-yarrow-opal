@@ -5,6 +5,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { SideBar, SiteNavProvider } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { SiteBackground } from "@/components/site-background";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { ThemeProvider } from "@/components/theme";
 import { TickerBar } from "@/components/ticker-bar";
@@ -55,12 +56,13 @@ export const Route = createRootRoute({
           }}
         />
       </head>
-      <body className="bg-bg text-foreground">
+      <body className="text-foreground">
+        <SiteBackground />
         <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
             <SiteNavProvider>
-              <div className="flex min-h-dvh flex-col">
+              <div className="relative z-0 flex min-h-dvh flex-col">
                 <SiteHeader />
                 <TickerBar />
                 <div className="flex min-h-0 flex-1">
