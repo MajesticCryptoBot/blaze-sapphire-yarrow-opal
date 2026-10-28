@@ -25,15 +25,21 @@ export function ArticleCard({
   from = "",
   withPhoto = false,
   withVideo = false,
+  videoFallback = false,
 }: {
   article: ArticleWithTelegram;
   featured?: boolean;
   from?: string;
-  /** Media are a main-deck treatment (homepage featured slot) — every other
-   *  card stays text-first. */
+  /** Photos are a main-deck treatment: the homepage featured slot and every
+   *  desk's lead story show their photo (fit-gated). All other cards stay
+   *  text-first — the original behaviour. */
   withPhoto?: boolean;
   /** The dedicated Videos desk keeps video players on its cards. */
   withVideo?: boolean;
+  /** Homepage featured slot only: when a story has no card-worthy photo, its
+   *  video may play there (approved homepage behaviour). Desk cards never
+   *  fall back to video — a video can never replace a photo on a desk. */
+  videoFallback?: boolean;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
   const path = storyPath(article._telegramId ?? slug);
@@ -50,19 +56,19 @@ export function ArticleCard({
     photo2W: article._photo2W,
     photo2H: article._photo2H,
   });
-  // Original homepage behaviour restored: media is a main-deck treatment.
-  // `withPhoto` is passed only by the homepage's featured slot — every other
-  // card (homepage grid, topic desks, search results) stays text-first and
-  // can never render a photo OR a video. On the main deck a fitting photo
-  // always wins over a video; a video appears only when the story has no
-  // card-worthy photo, so a video attachment can never strip photos from
-  // cards again. The only exception is the dedicated Videos desk
-  // (`withVideo`), whose cards are video players by design. The telegram
-  // wire and the full story view render media as before.
+  // Original behaviour, restored across the site:
+  //  - Photos show on the main decks only: the homepage featured slot and
+  //    each desk's lead story (`withPhoto`), fit-gated as approved. Every
+  //    other card is text-first, exactly like the original repo.
+  //  - Video players on cards exist ONLY on the dedicated Videos desk
+  //    (`withVideo`), plus the homepage featured slot's approved fallback
+  //    (`videoFallback`) when a story has no card-worthy photo. A video
+  //    attachment can therefore never replace or sit under a photo on any
+  //    desk card again.
   const hasPhotos = withPhoto && fit.mode !== "none";
   const hasVideo =
     Boolean(article._telegramId && article._hasVideo) &&
-    (withVideo || (withPhoto && !hasPhotos));
+    (withVideo || (withPhoto && videoFallback && !hasPhotos));
   const hasMedia = hasVideo || hasPhotos;
 
   return (

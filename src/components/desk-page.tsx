@@ -17,6 +17,10 @@ function toArticle(post: TelegramPost): Article & {
   _hasVideo: boolean;
   _videoMimeType: string | null;
   _videoUrl: string | null;
+  _photoW: number | null;
+  _photoH: number | null;
+  _photo2W: number | null;
+  _photo2H: number | null;
 } {
   const { headline, dek } = splitHeadline(post.text);
   return {
@@ -36,6 +40,10 @@ function toArticle(post: TelegramPost): Article & {
     _hasVideo: post.hasVideo,
     _videoMimeType: post.videoMimeType,
     _videoUrl: post.videoUrl,
+    _photoW: post.photoW,
+    _photoH: post.photoH,
+    _photo2W: post.photo2W,
+    _photo2H: post.photo2H,
   };
 }
 
@@ -398,10 +406,15 @@ export function DeskPage({ section }: { section: DeskSection }) {
             </p>
           ) : null}
           <div className={isFunFacts ? "mt-4" : "mt-8"}>
+            {/* Original desk behaviour restored: the desk's lead story shows
+                its photo (fit-gated), like the homepage main deck. Videos
+                play on this desk's cards only on the dedicated Videos desk —
+                never as a replacement for a photo. */}
             <ArticleCard
               article={lead}
               featured
               from={section.slug}
+              withPhoto
               withVideo={section.slug === "videos"}
             />
           </div>

@@ -145,7 +145,7 @@ function Home() {
       {lead ? (
         <div className="mt-8 grid gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <ArticleCard article={lead} featured withPhoto />
+            <ArticleCard article={lead} featured withPhoto videoFallback />
           </div>
           <aside className="flex flex-col gap-5 lg:col-span-2">
             {rest.slice(0, 2).map((a) => (

@@ -82,6 +82,9 @@ function ArticlePage() {
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
 
+        {/* Original story behaviour, restored: the photo IS the story's media.
+            A video player appears only when the story has no photo at all —
+            a video can never replace a photo or sit under it again. */}
         {post.hasPhoto ? (
           <div className="mt-6">
             <StoryPhotos
@@ -96,9 +99,8 @@ function ArticlePage() {
               photo2H={post.photo2H}
             />
           </div>
-        ) : null}
-        {post.hasVideo ? (
-          <div className={post.hasPhoto ? "mt-4" : "mt-6"}>
+        ) : post.hasVideo ? (
+          <div className="mt-6">
             <StoryVideo id={post.id} mimeType={post.videoMimeType} videoUrl={post.videoUrl} size="article" />
           </div>
         ) : null}
