@@ -82,11 +82,7 @@ function ArticlePage() {
 
         <h1 className="mt-4 font-display text-3xl font-medium sm:text-4xl">{headline}</h1>
 
-        {post.hasVideo ? (
-          <div className="mt-6">
-            <StoryVideo id={post.id} mimeType={post.videoMimeType} videoUrl={post.videoUrl} size="article" />
-          </div>
-        ) : post.hasPhoto ? (
+        {post.hasPhoto ? (
           <div className="mt-6">
             <StoryPhotos
               id={post.id}
@@ -99,6 +95,11 @@ function ArticlePage() {
               photo2W={post.photo2W}
               photo2H={post.photo2H}
             />
+          </div>
+        ) : null}
+        {post.hasVideo ? (
+          <div className={post.hasPhoto ? "mt-4" : "mt-6"}>
+            <StoryVideo id={post.id} mimeType={post.videoMimeType} videoUrl={post.videoUrl} size="article" />
           </div>
         ) : null}
 

@@ -398,12 +398,22 @@ export function DeskPage({ section }: { section: DeskSection }) {
             </p>
           ) : null}
           <div className={isFunFacts ? "mt-4" : "mt-8"}>
-            <ArticleCard article={lead} featured from={section.slug} />
+            <ArticleCard
+              article={lead}
+              featured
+              from={section.slug}
+              withVideo={section.slug === "videos"}
+            />
           </div>
           {rest.length > 0 ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rest.map((article) => (
-                <ArticleCard key={article.slug} article={article} from={section.slug} />
+                <ArticleCard
+                  key={article.slug}
+                  article={article}
+                  from={section.slug}
+                  withVideo={section.slug === "videos"}
+                />
               ))}
             </div>
           ) : null}

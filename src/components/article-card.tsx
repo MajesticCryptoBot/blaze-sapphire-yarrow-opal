@@ -24,22 +24,24 @@ export function ArticleCard({
   featured = false,
   from = "",
   withPhoto = false,
+  withVideo = false,
 }: {
   article: ArticleWithTelegram;
   featured?: boolean;
   from?: string;
-  /** Photos are a homepage treatment only — section desks stay text-first. */
+  /** Media are a main-deck treatment (homepage featured slot) — every other
+   *  card stays text-first. */
   withPhoto?: boolean;
+  /** The dedicated Videos desk keeps video players on its cards. */
+  withVideo?: boolean;
 }) {
   const slug = article._telegramId ? `telegram-${article._telegramId}` : article.slug;
   const path = storyPath(article._telegramId ?? slug);
   const storyHref = from ? `${path}?from=${encodeURIComponent(from)}` : path;
-  const hasVideo = Boolean(article._telegramId && article._hasVideo);
   // "Check size, fit, or drop": the photo is measured against the uniform
   // 16:9 deck frame and only earns a card slot when at least 80% of it stays
   // visible. Photos that fail keep the card text-first; their photo lives in
-  // the full story view. Photos are a homepage treatment only — section desks
-  // stay text-first.
+  // the full story view.
   const fit = fitCardPhotos({
     hasPhoto: Boolean(article._hasPhoto),
     hasPhoto2: Boolean(article._hasPhoto2),
@@ -48,7 +50,19 @@ export function ArticleCard({
     photo2W: article._photo2W,
     photo2H: article._photo2H,
   });
+  // Original homepage behaviour restored: media is a main-deck treatment.
+  // `withPhoto` is passed only by the homepage's featured slot — every other
+  // card (homepage grid, topic desks, search results) stays text-first and
+  // can never render a photo OR a video. On the main deck a fitting photo
+  // always wins over a video; a video appears only when the story has no
+  // card-worthy photo, so a video attachment can never strip photos from
+  // cards again. The only exception is the dedicated Videos desk
+  // (`withVideo`), whose cards are video players by design. The telegram
+  // wire and the full story view render media as before.
   const hasPhotos = withPhoto && fit.mode !== "none";
+  const hasVideo =
+    Boolean(article._telegramId && article._hasVideo) &&
+    (withVideo || (withPhoto && !hasPhotos));
   const hasMedia = hasVideo || hasPhotos;
 
   return (

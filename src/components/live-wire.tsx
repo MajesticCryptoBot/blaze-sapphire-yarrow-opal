@@ -66,7 +66,9 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
   const dek = latest ? splitHeadline(latest.text).dek : null;
   // Same "check size, fit, or drop" gate as the deck: the featured wire slot
   // only shows the photo when it fits the uniform 16:9 frame; otherwise the
-  // photo lives in the full story view.
+  // photo lives in the full story view. A fitting photo always renders before
+  // any video — a video attachment can never replace a good photo on the wire.
+  // Videos show here only for stories that have no card-worthy photo.
   const fit = latest
     ? fitCardPhotos({
         hasPhoto: latest.hasPhoto,
@@ -96,11 +98,7 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
           <p className="py-6 text-sm text-muted">Waiting for the next headline.</p>
         ) : (
           <article className="py-5">
-            {latest.hasVideo ? (
-              <div className="mb-4">
-                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} videoUrl={latest.videoUrl} size="wire" />
-              </div>
-            ) : latest.hasPhoto && fit.mode !== "none" ? (
+            {latest.hasPhoto && fit.mode !== "none" ? (
               <div className="mb-4">
                 <StoryPhotos
                   id={latest.id}
@@ -115,6 +113,10 @@ export function LiveWire({ latest }: { latest?: TelegramPost }) {
                   mode={fit.mode === "pair" ? "pair" : "single"}
                   solo={fit.solo}
                 />
+              </div>
+            ) : latest.hasVideo ? (
+              <div className="mb-4">
+                <StoryVideo id={latest.id} mimeType={latest.videoMimeType} videoUrl={latest.videoUrl} size="wire" />
               </div>
             ) : null}
 

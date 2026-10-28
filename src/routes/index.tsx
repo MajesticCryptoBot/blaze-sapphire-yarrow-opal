@@ -149,7 +149,7 @@ function Home() {
           </div>
           <aside className="flex flex-col gap-5 lg:col-span-2">
             {rest.slice(0, 2).map((a) => (
-              <ArticleCard key={a.slug} article={a} withPhoto />
+              <ArticleCard key={a.slug} article={a} />
             ))}
           </aside>
         </div>
@@ -162,7 +162,7 @@ function Home() {
       {rest.length > 2 ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {rest.slice(2).map((a) => (
-            <ArticleCard key={a.slug} article={a} withPhoto />
+            <ArticleCard key={a.slug} article={a} />
           ))}
         </div>
       ) : null}
