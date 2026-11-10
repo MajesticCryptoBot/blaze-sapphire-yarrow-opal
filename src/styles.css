@@ -119,102 +119,23 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Black-dominated background – subtle blue hints only
+   Pure dark background + parallax stars only (no color orbs)
    ───────────────────────────────────────────────────────────── */
 
 .site-bg {
-  --bg-shift: 0px;
-  --bg-shift-slow: 0px;
   --stars-far: 0px;
   --stars-mid: 0px;
   --stars-near: 0px;
 }
 
 .site-bg-base {
-  background:
-    radial-gradient(130% 90% at 50% -20%, rgba(25, 55, 110, 0.22) 0%, transparent 55%),
-    radial-gradient(100% 75% at 95% 5%, rgba(30, 100, 160, 0.14) 0%, transparent 50%),
-    radial-gradient(95% 70% at 5% 95%, rgba(15, 80, 100, 0.12) 0%, transparent 48%),
-    radial-gradient(80% 50% at 60% 60%, rgba(20, 120, 150, 0.06) 0%, transparent 50%),
-    linear-gradient(175deg, #050608 0%, #08090c 40%, #06070a 100%);
+  background: #050608;
 }
 
 html[data-theme="light"] .site-bg-base {
-  background:
-    radial-gradient(130% 90% at 50% -20%, rgba(130, 175, 245, 0.18) 0%, transparent 55%),
-    radial-gradient(100% 75% at 95% 5%, rgba(110, 185, 230, 0.12) 0%, transparent 50%),
-    radial-gradient(95% 70% at 5% 95%, rgba(90, 180, 200, 0.1) 0%, transparent 48%),
-    linear-gradient(175deg, #f2f4f8 0%, #f5f5f7 40%, #f0f2f6 100%);
+  background: #f5f5f7;
 }
 
-.site-bg-orb {
-  border-radius: 50%;
-  filter: blur(90px);
-  will-change: transform;
-}
-
-.site-bg-orb-1 {
-  width: min(78vw, 820px);
-  height: min(78vw, 820px);
-  top: -20%;
-  left: -16%;
-  background: radial-gradient(circle, rgba(55, 120, 220, 0.22) 0%, transparent 70%);
-  opacity: 0.45;
-  transform: translate3d(0, calc(var(--bg-shift) * -1), 0);
-}
-
-.site-bg-orb-2 {
-  width: min(62vw, 640px);
-  height: min(62vw, 640px);
-  top: 18%;
-  right: -14%;
-  background: radial-gradient(circle, rgba(35, 150, 195, 0.16) 0%, transparent 70%);
-  opacity: 0.38;
-  transform: translate3d(0, calc(var(--bg-shift-slow) * -1.4), 0);
-}
-
-.site-bg-orb-3 {
-  width: min(68vw, 700px);
-  height: min(68vw, 700px);
-  bottom: -24%;
-  left: 12%;
-  background: radial-gradient(circle, rgba(25, 160, 180, 0.14) 0%, transparent 70%);
-  opacity: 0.32;
-  transform: translate3d(0, calc(var(--bg-shift) * -0.6), 0);
-}
-
-.site-bg-orb-4 {
-  width: min(50vw, 500px);
-  height: min(50vw, 500px);
-  top: 45%;
-  left: 40%;
-  background: radial-gradient(circle, rgba(35, 60, 120, 0.12) 0%, transparent 70%);
-  opacity: 0.28;
-  filter: blur(95px);
-  transform: translate3d(0, calc(var(--bg-shift-slow) * -0.9), 0);
-}
-
-html[data-theme="light"] .site-bg-orb-1 {
-  background: radial-gradient(circle, rgba(80, 140, 240, 0.18) 0%, transparent 70%);
-  opacity: 0.5;
-}
-
-html[data-theme="light"] .site-bg-orb-2 {
-  background: radial-gradient(circle, rgba(50, 170, 215, 0.12) 0%, transparent 70%);
-  opacity: 0.4;
-}
-
-html[data-theme="light"] .site-bg-orb-3 {
-  background: radial-gradient(circle, rgba(40, 180, 200, 0.1) 0%, transparent 70%);
-  opacity: 0.35;
-}
-
-html[data-theme="light"] .site-bg-orb-4 {
-  background: radial-gradient(circle, rgba(100, 140, 200, 0.08) 0%, transparent 70%);
-  opacity: 0.3;
-}
-
-/* Stars unchanged */
 .site-bg-stars {
   width: 1px;
   height: 1px;
@@ -269,21 +190,20 @@ html[data-theme="light"] .site-bg-noise {
 .site-bg-vignette {
   background: radial-gradient(
     125% 105% at 50% 35%,
-    transparent 40%,
-    rgba(0, 0, 0, 0.5) 100%
+    transparent 45%,
+    rgba(0, 0, 0, 0.35) 100%
   );
 }
 
 html[data-theme="light"] .site-bg-vignette {
   background: radial-gradient(
     125% 105% at 50% 35%,
-    transparent 45%,
-    rgba(0, 0, 0, 0.06) 100%
+    transparent 50%,
+    rgba(0, 0, 0, 0.04) 100%
   );
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-bg-orb,
   .site-bg-stars {
     transform: none !important;
   }
